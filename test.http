@@ -1,0 +1,132 @@
+### 헬스체크
+GET http://localhost:4000/api/health
+
+### ===== 서지 레코드 =====
+
+### 전체 서지 레코드 조회
+GET http://localhost:4000/api/bibs
+
+### 서지 레코드 상세 조회 (MARC, 저자, 주제 포함)
+GET http://localhost:4000/api/bibs/1
+
+### 서지 검색 (제목/저자/ISBN)
+GET http://localhost:4000/api/bibs/search?q=디지털
+
+### 서지 레코드 등록
+POST http://localhost:4000/api/bibs
+Content-Type: application/json
+
+{
+  "control_number": "KMO202300003",
+  "isbn": "9788900000003",
+  "call_number": "005.1-박56ㅍ",
+  "title": "프로그래밍 원리",
+  "statement_of_resp": "박문수 지음",
+  "main_entry": "박문수",
+  "publisher": "한빛미디어",
+  "pub_year": 2024,
+  "extent": "320 p. ; 24 cm",
+  "ddc_number": "005.1"
+}
+
+### 서지 레코드 수정
+PUT http://localhost:4000/api/bibs/1
+Content-Type: application/json
+
+{
+  "abstract": "디지털도서관의 설계, 구축, 운영 전 과정을 다룬 개정판 교재"
+}
+
+### 서지 레코드 삭제 (논리 삭제)
+DELETE http://localhost:4000/api/bibs/1
+
+### ===== 대출/반납 =====
+
+### 대출 처리
+POST http://localhost:4000/api/loans
+Content-Type: application/json
+
+{
+  "item_id": 1,
+  "user_id": 1,
+  "due_date": "2026-05-04"
+}
+
+### 반납 처리
+PUT http://localhost:4000/api/loans/1/return
+
+### 이용자별 대출 현황
+GET http://localhost:4000/api/loans/user/3
+
+### 연체 목록
+GET http://localhost:4000/api/loans/overdue
+
+### ===== 이용자 =====
+
+### 이용자 조회
+GET http://localhost:4000/api/users/1
+
+### 이용자 등록
+POST http://localhost:4000/api/users
+Content-Type: application/json
+
+{
+  "user_number": "2024010001",
+  "name": "정도전",
+  "email": "dojeon.jung@univ.ac.kr",
+  "phone": "010-5678-1234",
+  "affiliation": "문헌정보학과",
+  "user_type": "student"
+}
+
+### ===== 수서 =====
+
+### 수서 목록
+GET http://localhost:4000/api/acquisitions
+
+### 구입 신청 등록
+POST http://localhost:4000/api/acquisitions
+Content-Type: application/json
+
+{
+  "title": "인공지능 개론",
+  "author": "세종대왕",
+  "isbn": "9788900000004",
+  "publisher": "교보문고",
+  "quantity": 2,
+  "unit_price": 35000,
+  "order_date": "2026-04-20",
+  "fund_code": "LIB-2026-001"
+}
+
+### 수서 수령 처리
+PUT http://localhost:4000/api/acquisitions/1/receive
+
+### ===== 검색 (Elasticsearch + nori) =====
+
+### 통합 검색 (전체 필드, 가중치 적용)
+GET http://localhost:4000/api/v1/search?q=디지털도서관
+
+### 통합 검색 — 페이지네이션
+GET http://localhost:4000/api/v1/search?q=디지털&from=0&size=5
+
+### 제목 검색
+GET http://localhost:4000/api/v1/search?q=디지털도서관&field=title
+
+### 저자 검색 (main_entry 필드)
+GET http://localhost:4000/api/v1/search?q=홍길동&field=author
+
+### 주제 검색
+GET http://localhost:4000/api/v1/search?q=정보검색&field=subject
+
+### ISBN 정확 일치 검색
+GET http://localhost:4000/api/v1/search?q=9788900000003&field=isbn
+
+### 자동완성 (제목 prefix)
+GET http://localhost:4000/api/v1/search/suggest?q=디지
+
+### 검색어 누락 — 400 검증
+GET http://localhost:4000/api/v1/search?q=
+
+### 잘못된 field 값 — 400 검증
+GET http://localhost:4000/api/v1/search?q=test&field=author_invalid

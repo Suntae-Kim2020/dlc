@@ -1,0 +1,461 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  AI Library 디지털도서관 메타데이터 응용 프로파일
+  기반 표준: Dublin Core Metadata Element Set (DCMES)
+  대상 자원: 단행본(Book), 전자자원(EResource), 연구데이터(Dataset)
+  연구데이터는 DataCite Metadata Schema 4.x를 DC로 매핑하여 반영
+-->
+<applicationProfile
+    xmlns:dc="http://purl.org/dc/elements/1.1/"
+    xmlns:dcterms="http://purl.org/dc/terms/"
+    xmlns:datacite="http://datacite.org/schema/kernel-4"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+
+  <profileInfo>
+    <title>AI Library 디지털도서관 메타데이터 응용 프로파일</title>
+    <creator>AI Library</creator>
+    <date>2026-04-20</date>
+    <description>
+      Dublin Core를 기반으로 단행본, 전자자원, 연구데이터의
+      메타데이터를 통합 관리하기 위한 응용 프로파일이다.
+      연구데이터 항목은 DataCite Metadata Schema 4.x의 필수/권장 요소를
+      Dublin Core로 매핑하여 반영하였다.
+    </description>
+    <baseStandard>Dublin Core Metadata Element Set, Version 1.1</baseStandard>
+    <baseStandardURI>http://purl.org/dc/elements/1.1/</baseStandardURI>
+  </profileInfo>
+
+  <!-- =======================================================
+       1. 단행본 (Book)
+       ======================================================= -->
+  <resourceType id="Book">
+    <label xml:lang="ko">단행본</label>
+    <description xml:lang="ko">도서관 소장 인쇄 및 전자 단행본</description>
+
+    <element ref="dc:title">
+      <label xml:lang="ko">표제</label>
+      <definition xml:lang="ko">단행본의 본표제 (MARC 245$a에 해당)</definition>
+      <obligation>mandatory</obligation>
+      <repeatable>false</repeatable>
+      <valueType>string</valueType>
+      <encodingScheme/>
+    </element>
+
+    <element ref="dc:creator">
+      <label xml:lang="ko">저자</label>
+      <definition xml:lang="ko">단행본의 주저자 또는 기여 저자 (MARC 100/700에 해당)</definition>
+      <obligation>mandatory</obligation>
+      <repeatable>true</repeatable>
+      <valueType>string</valueType>
+      <encodingScheme/>
+    </element>
+
+    <element ref="dc:subject">
+      <label xml:lang="ko">주제</label>
+      <definition xml:lang="ko">단행본의 주제명 또는 분류번호</definition>
+      <obligation>recommended</obligation>
+      <repeatable>true</repeatable>
+      <valueType>string</valueType>
+      <encodingScheme>LCSH, DDC, KDC</encodingScheme>
+    </element>
+
+    <element ref="dc:description">
+      <label xml:lang="ko">설명</label>
+      <definition xml:lang="ko">단행본의 내용 요약 또는 초록 (MARC 520에 해당)</definition>
+      <obligation>recommended</obligation>
+      <repeatable>false</repeatable>
+      <valueType>string</valueType>
+      <encodingScheme/>
+    </element>
+
+    <element ref="dc:publisher">
+      <label xml:lang="ko">발행처</label>
+      <definition xml:lang="ko">단행본을 발행한 출판사 (MARC 260/264$b에 해당)</definition>
+      <obligation>recommended</obligation>
+      <repeatable>false</repeatable>
+      <valueType>string</valueType>
+      <encodingScheme/>
+    </element>
+
+    <element ref="dc:date">
+      <label xml:lang="ko">발행년</label>
+      <definition xml:lang="ko">단행본의 발행 연도 (MARC 260/264$c에 해당)</definition>
+      <obligation>recommended</obligation>
+      <repeatable>false</repeatable>
+      <valueType>date</valueType>
+      <encodingScheme>W3CDTF (YYYY)</encodingScheme>
+    </element>
+
+    <element ref="dc:identifier" qualifier="ISBN">
+      <label xml:lang="ko">ISBN</label>
+      <definition xml:lang="ko">국제표준도서번호 (MARC 020에 해당)</definition>
+      <obligation>recommended</obligation>
+      <repeatable>false</repeatable>
+      <valueType>string</valueType>
+      <encodingScheme>ISBN-13</encodingScheme>
+    </element>
+
+    <element ref="dc:identifier" qualifier="callNumber">
+      <label xml:lang="ko">청구기호</label>
+      <definition xml:lang="ko">도서관 배가를 위한 청구기호 (MARC 090/050에 해당)</definition>
+      <obligation>recommended</obligation>
+      <repeatable>false</repeatable>
+      <valueType>string</valueType>
+      <encodingScheme/>
+    </element>
+
+    <element ref="dc:language">
+      <label xml:lang="ko">언어</label>
+      <definition xml:lang="ko">단행본의 본문 언어</definition>
+      <obligation>recommended</obligation>
+      <repeatable>false</repeatable>
+      <valueType>string</valueType>
+      <encodingScheme>ISO 639-3</encodingScheme>
+    </element>
+
+    <element ref="dc:format">
+      <label xml:lang="ko">형태사항</label>
+      <definition xml:lang="ko">단행본의 물리적 형태 (MARC 300에 해당)</definition>
+      <obligation>optional</obligation>
+      <repeatable>false</repeatable>
+      <valueType>string</valueType>
+      <encodingScheme>IMT</encodingScheme>
+    </element>
+
+    <element ref="dc:rights">
+      <label xml:lang="ko">권한</label>
+      <definition xml:lang="ko">단행본의 저작권 또는 이용 조건</definition>
+      <obligation>optional</obligation>
+      <repeatable>false</repeatable>
+      <valueType>string</valueType>
+      <encodingScheme/>
+    </element>
+  </resourceType>
+
+  <!-- =======================================================
+       2. 전자자원 (EResource)
+       ======================================================= -->
+  <resourceType id="EResource">
+    <label xml:lang="ko">전자자원</label>
+    <description xml:lang="ko">전자저널, 전자책, 데이터베이스 등 구독 전자자원</description>
+
+    <element ref="dc:title">
+      <label xml:lang="ko">자원명</label>
+      <definition xml:lang="ko">전자자원의 명칭</definition>
+      <obligation>mandatory</obligation>
+      <repeatable>false</repeatable>
+      <valueType>string</valueType>
+      <encodingScheme/>
+    </element>
+
+    <element ref="dc:creator">
+      <label xml:lang="ko">제작자</label>
+      <definition xml:lang="ko">전자자원의 제작자 또는 저자</definition>
+      <obligation>recommended</obligation>
+      <repeatable>true</repeatable>
+      <valueType>string</valueType>
+      <encodingScheme/>
+    </element>
+
+    <element ref="dc:subject">
+      <label xml:lang="ko">주제</label>
+      <definition xml:lang="ko">전자자원이 다루는 주제 분야</definition>
+      <obligation>recommended</obligation>
+      <repeatable>true</repeatable>
+      <valueType>string</valueType>
+      <encodingScheme>LCSH, DDC, KDC</encodingScheme>
+    </element>
+
+    <element ref="dc:description">
+      <label xml:lang="ko">설명</label>
+      <definition xml:lang="ko">전자자원의 내용 요약 또는 서비스 설명</definition>
+      <obligation>recommended</obligation>
+      <repeatable>false</repeatable>
+      <valueType>string</valueType>
+      <encodingScheme/>
+    </element>
+
+    <element ref="dc:publisher">
+      <label xml:lang="ko">제공 기관</label>
+      <definition xml:lang="ko">전자자원을 제공하는 출판사 또는 플랫폼</definition>
+      <obligation>recommended</obligation>
+      <repeatable>false</repeatable>
+      <valueType>string</valueType>
+      <encodingScheme/>
+    </element>
+
+    <element ref="dc:date" qualifier="subscriptionStart">
+      <label xml:lang="ko">구독 시작일</label>
+      <definition xml:lang="ko">전자자원 구독의 시작 날짜</definition>
+      <obligation>recommended</obligation>
+      <repeatable>false</repeatable>
+      <valueType>date</valueType>
+      <encodingScheme>W3CDTF (YYYY-MM-DD)</encodingScheme>
+    </element>
+
+    <element ref="dc:date" qualifier="subscriptionEnd">
+      <label xml:lang="ko">구독 종료일</label>
+      <definition xml:lang="ko">전자자원 구독의 종료 날짜</definition>
+      <obligation>recommended</obligation>
+      <repeatable>false</repeatable>
+      <valueType>date</valueType>
+      <encodingScheme>W3CDTF (YYYY-MM-DD)</encodingScheme>
+    </element>
+
+    <element ref="dc:identifier" qualifier="URL">
+      <label xml:lang="ko">접속 URL</label>
+      <definition xml:lang="ko">전자자원에 접속하기 위한 URL</definition>
+      <obligation>mandatory</obligation>
+      <repeatable>false</repeatable>
+      <valueType>URI</valueType>
+      <encodingScheme>URI</encodingScheme>
+    </element>
+
+    <element ref="dc:type">
+      <label xml:lang="ko">자원 유형</label>
+      <definition xml:lang="ko">전자자원의 유형 (전자저널, 전자책, 데이터베이스 등)</definition>
+      <obligation>mandatory</obligation>
+      <repeatable>false</repeatable>
+      <valueType>string</valueType>
+      <encodingScheme>DCMI Type Vocabulary (e_journal, e_book, database)</encodingScheme>
+    </element>
+
+    <element ref="dc:language">
+      <label xml:lang="ko">언어</label>
+      <definition xml:lang="ko">전자자원의 주요 언어</definition>
+      <obligation>recommended</obligation>
+      <repeatable>false</repeatable>
+      <valueType>string</valueType>
+      <encodingScheme>ISO 639-3</encodingScheme>
+    </element>
+
+    <element ref="dc:rights" qualifier="licenseType">
+      <label xml:lang="ko">라이선스 유형</label>
+      <definition xml:lang="ko">전자자원의 라이선스 또는 이용 조건</definition>
+      <obligation>recommended</obligation>
+      <repeatable>false</repeatable>
+      <valueType>string</valueType>
+      <encodingScheme/>
+    </element>
+
+    <element ref="dc:format">
+      <label xml:lang="ko">형식</label>
+      <definition xml:lang="ko">전자자원의 디지털 형식</definition>
+      <obligation>optional</obligation>
+      <repeatable>false</repeatable>
+      <valueType>string</valueType>
+      <encodingScheme>IMT (text/html, application/pdf 등)</encodingScheme>
+    </element>
+  </resourceType>
+
+  <!-- =======================================================
+       3. 연구데이터 (Dataset) — DataCite → DC 매핑
+       ======================================================= -->
+  <resourceType id="Dataset">
+    <label xml:lang="ko">연구데이터</label>
+    <description xml:lang="ko">
+      DataCite Metadata Schema 4.x 기반의 연구데이터.
+      DataCite 필수/권장 요소를 Dublin Core로 매핑하여 정의한다.
+    </description>
+
+    <!-- DataCite #2 Creator → dc:creator -->
+    <element ref="dc:title">
+      <label xml:lang="ko">제목</label>
+      <definition xml:lang="ko">연구데이터의 제목 (DataCite: Title)</definition>
+      <obligation>mandatory</obligation>
+      <repeatable>false</repeatable>
+      <valueType>string</valueType>
+      <encodingScheme/>
+      <dataciteMapping>DataCite #3 Title</dataciteMapping>
+    </element>
+
+    <element ref="dc:creator" qualifier="ORCID">
+      <label xml:lang="ko">생성자</label>
+      <definition xml:lang="ko">
+        연구데이터의 생성자 (DataCite: Creator).
+        ORCID 식별자를 qualifier로 포함한다.
+      </definition>
+      <obligation>mandatory</obligation>
+      <repeatable>true</repeatable>
+      <valueType>string</valueType>
+      <encodingScheme>ORCID (https://orcid.org/0000-0000-0000-0000)</encodingScheme>
+      <dataciteMapping>DataCite #2 Creator / creatorName, nameIdentifier(ORCID)</dataciteMapping>
+    </element>
+
+    <!-- DataCite #1 Identifier → dc:identifier -->
+    <element ref="dc:identifier" qualifier="DOI">
+      <label xml:lang="ko">DOI</label>
+      <definition xml:lang="ko">
+        연구데이터의 디지털 객체 식별자 (DataCite: Identifier).
+        identifierType은 DOI로 고정한다.
+      </definition>
+      <obligation>mandatory</obligation>
+      <repeatable>false</repeatable>
+      <valueType>URI</valueType>
+      <encodingScheme>DOI (https://doi.org/10.xxxxx/xxxxx)</encodingScheme>
+      <dataciteMapping>DataCite #1 Identifier (identifierType=DOI)</dataciteMapping>
+    </element>
+
+    <!-- DataCite #4 Publisher → dc:publisher -->
+    <element ref="dc:publisher">
+      <label xml:lang="ko">발행 기관</label>
+      <definition xml:lang="ko">연구데이터를 공개·배포한 기관 (DataCite: Publisher)</definition>
+      <obligation>mandatory</obligation>
+      <repeatable>false</repeatable>
+      <valueType>string</valueType>
+      <encodingScheme/>
+      <dataciteMapping>DataCite #4 Publisher</dataciteMapping>
+    </element>
+
+    <!-- DataCite #5 PublicationYear → dc:date -->
+    <element ref="dc:date" qualifier="publicationYear">
+      <label xml:lang="ko">발행년</label>
+      <definition xml:lang="ko">연구데이터가 공개된 연도 (DataCite: PublicationYear)</definition>
+      <obligation>mandatory</obligation>
+      <repeatable>false</repeatable>
+      <valueType>date</valueType>
+      <encodingScheme>W3CDTF (YYYY)</encodingScheme>
+      <dataciteMapping>DataCite #5 PublicationYear</dataciteMapping>
+    </element>
+
+    <!-- DataCite #6 Subject → dc:subject -->
+    <element ref="dc:subject">
+      <label xml:lang="ko">주제</label>
+      <definition xml:lang="ko">연구데이터의 주제 분류 (DataCite: Subject)</definition>
+      <obligation>recommended</obligation>
+      <repeatable>true</repeatable>
+      <valueType>string</valueType>
+      <encodingScheme>LCSH, DDC, KDC, MeSH</encodingScheme>
+      <dataciteMapping>DataCite #6 Subject (subjectScheme)</dataciteMapping>
+    </element>
+
+    <!-- DataCite #17 Description → dc:description -->
+    <element ref="dc:description">
+      <label xml:lang="ko">설명</label>
+      <definition xml:lang="ko">연구데이터의 내용 설명 또는 초록 (DataCite: Description)</definition>
+      <obligation>recommended</obligation>
+      <repeatable>false</repeatable>
+      <valueType>string</valueType>
+      <encodingScheme/>
+      <dataciteMapping>DataCite #17 Description (descriptionType=Abstract)</dataciteMapping>
+    </element>
+
+    <!-- DataCite #16 Rights → dc:rights -->
+    <element ref="dc:rights" qualifier="license">
+      <label xml:lang="ko">라이선스</label>
+      <definition xml:lang="ko">연구데이터의 이용 라이선스 (DataCite: Rights)</definition>
+      <obligation>recommended</obligation>
+      <repeatable>false</repeatable>
+      <valueType>URI</valueType>
+      <encodingScheme>SPDX License (CC-BY-4.0 등)</encodingScheme>
+      <dataciteMapping>DataCite #16 Rights (rightsURI, rightsIdentifier)</dataciteMapping>
+    </element>
+
+    <!-- DataCite #15 Version → dc:description qualifier -->
+    <element ref="dc:description" qualifier="version">
+      <label xml:lang="ko">버전</label>
+      <definition xml:lang="ko">연구데이터의 버전 정보 (DataCite: Version)</definition>
+      <obligation>recommended</obligation>
+      <repeatable>false</repeatable>
+      <valueType>string</valueType>
+      <encodingScheme>Semantic Versioning (1.0.0)</encodingScheme>
+      <dataciteMapping>DataCite #15 Version</dataciteMapping>
+    </element>
+
+    <!-- DataCite #10 ResourceType → dc:type -->
+    <element ref="dc:type">
+      <label xml:lang="ko">자원 유형</label>
+      <definition xml:lang="ko">자원 유형. 본 프로파일에서는 Dataset으로 고정한다.</definition>
+      <obligation>mandatory</obligation>
+      <repeatable>false</repeatable>
+      <valueType>string</valueType>
+      <encodingScheme>DCMI Type Vocabulary (Dataset)</encodingScheme>
+      <dataciteMapping>DataCite #10 ResourceType (resourceTypeGeneral=Dataset)</dataciteMapping>
+    </element>
+
+    <!-- DataCite #14 Format → dc:format -->
+    <element ref="dc:format">
+      <label xml:lang="ko">형식</label>
+      <definition xml:lang="ko">연구데이터의 파일 형식 (DataCite: Format)</definition>
+      <obligation>optional</obligation>
+      <repeatable>true</repeatable>
+      <valueType>string</valueType>
+      <encodingScheme>IMT (text/csv, application/json 등)</encodingScheme>
+      <dataciteMapping>DataCite #14 Format</dataciteMapping>
+    </element>
+
+    <!-- DataCite #13 Size → dc:format qualifier -->
+    <element ref="dc:format" qualifier="size">
+      <label xml:lang="ko">크기</label>
+      <definition xml:lang="ko">연구데이터의 파일 크기 (DataCite: Size)</definition>
+      <obligation>optional</obligation>
+      <repeatable>false</repeatable>
+      <valueType>string</valueType>
+      <encodingScheme>bytes 또는 사람이 읽을 수 있는 형식 (예: 2.5 GB)</encodingScheme>
+      <dataciteMapping>DataCite #13 Size</dataciteMapping>
+    </element>
+
+    <!-- DataCite #9 Language → dc:language -->
+    <element ref="dc:language">
+      <label xml:lang="ko">언어</label>
+      <definition xml:lang="ko">연구데이터의 언어 (DataCite: Language)</definition>
+      <obligation>optional</obligation>
+      <repeatable>false</repeatable>
+      <valueType>string</valueType>
+      <encodingScheme>ISO 639-3</encodingScheme>
+      <dataciteMapping>DataCite #9 Language</dataciteMapping>
+    </element>
+
+    <!-- DataCite #18 GeoLocation → dc:coverage -->
+    <element ref="dc:coverage" qualifier="geoLocation">
+      <label xml:lang="ko">지리적 범위</label>
+      <definition xml:lang="ko">연구데이터의 지리적 범위 (DataCite: GeoLocation)</definition>
+      <obligation>optional</obligation>
+      <repeatable>true</repeatable>
+      <valueType>string</valueType>
+      <encodingScheme>DCMI Point, DCMI Box, ISO 3166</encodingScheme>
+      <dataciteMapping>DataCite #18 GeoLocation</dataciteMapping>
+    </element>
+
+    <!-- DataCite #12 RelatedIdentifier → dc:relation -->
+    <element ref="dc:relation">
+      <label xml:lang="ko">관련 자원</label>
+      <definition xml:lang="ko">
+        연구데이터와 관련된 자원의 식별자 (DataCite: RelatedIdentifier).
+        도서(서지 레코드) 또는 전자자원과의 연관 관계를 표현한다.
+      </definition>
+      <obligation>optional</obligation>
+      <repeatable>true</repeatable>
+      <valueType>URI</valueType>
+      <encodingScheme>DOI, ISBN, URL</encodingScheme>
+      <dataciteMapping>DataCite #12 RelatedIdentifier (relationType: IsSupplementTo, IsCitedBy 등)</dataciteMapping>
+    </element>
+
+    <!-- DataCite #19 FundingReference (DC 확장) -->
+    <element ref="dc:description" qualifier="fundingReference">
+      <label xml:lang="ko">연구비 정보</label>
+      <definition xml:lang="ko">
+        연구데이터 생성에 기여한 연구비 지원 정보 (DataCite: FundingReference).
+        funderName과 awardNumber를 포함한다.
+        Dublin Core에 직접 대응 요소가 없어 dc:description의 qualifier로 확장한다.
+      </definition>
+      <obligation>optional</obligation>
+      <repeatable>true</repeatable>
+      <valueType>string</valueType>
+      <encodingScheme>funderName; awardNumber (예: 한국연구재단; NRF-2025R1A2B1234567)</encodingScheme>
+      <dataciteMapping>DataCite #19 FundingReference (funderName, awardNumber, funderIdentifier)</dataciteMapping>
+    </element>
+
+    <!-- DataCite #18 접근 권한 (DC 확장) -->
+    <element ref="dc:rights" qualifier="accessRights">
+      <label xml:lang="ko">접근 권한</label>
+      <definition xml:lang="ko">연구데이터의 접근 수준 (open, restricted, embargoed, closed)</definition>
+      <obligation>recommended</obligation>
+      <repeatable>false</repeatable>
+      <valueType>string</valueType>
+      <encodingScheme>COAR Access Rights Vocabulary</encodingScheme>
+      <dataciteMapping>DataCite 관련: Rights 내 접근 수준 구분</dataciteMapping>
+    </element>
+  </resourceType>
+
+</applicationProfile>
