@@ -1,0 +1,27 @@
+# 환경변수 / 민감정보
+.env
+.env.*
+
+# 의존성
+node_modules/
+
+# 빌드 결과물
+dist/
+build/
+
+# 로그
+*.log
+
+# OS 파일
+.DS_Store
+Thumbs.db
+
+# IDE 설정
+.vscode/
+.idea/
+
+# Claude Code 로컬 설정
+.claude/
+
+# 런타임 상태
+tools/harvest-state.json
