@@ -1,5 +1,7 @@
 import { Link, NavLink, Outlet } from 'react-router-dom'
 
+import { READ_ONLY } from '../../config'
+
 const ADMIN_LINKS = [
   { to: '/admin', label: '대시보드', icon: '📊', end: true },
   { to: '/admin/bibs', label: '서지 관리', icon: '📚' },
@@ -39,6 +41,13 @@ export default function AdminLayout() {
           ← 이용자 화면으로 돌아가기
         </Link>
       </header>
+
+      {READ_ONLY && (
+        <div className="bg-amber-100 border-b border-amber-200 px-6 py-3 text-sm text-amber-900">
+          <strong>⚠ 데모 모드</strong> — 모든 변경 작업(등록·수정·삭제·반납·수령)이
+          비활성화되어 있습니다. 화면 구성과 데이터 흐름만 살펴볼 수 있습니다.
+        </div>
+      )}
 
       {/* 모바일용 가로 네비게이션 (md 미만) */}
       <nav className="md:hidden bg-white border-b border-slate-200 px-4 py-2 flex gap-1 overflow-x-auto">

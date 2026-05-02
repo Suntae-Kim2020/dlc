@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 
 import { ragSearch } from '../../api/rag'
+import { READ_ONLY } from '../../config'
 
 function Spinner() {
   return (
@@ -104,6 +105,36 @@ export default function RagPage() {
     if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
       submit()
     }
+  }
+
+  if (READ_ONLY) {
+    return (
+      <div className="space-y-4">
+        <h1 className="text-3xl font-bold text-slate-900">AI 자연어 검색</h1>
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-6">
+          <h2 className="text-lg font-semibold text-amber-900 mb-2">
+            ⚠ 비용 발생으로 사용할 수 없습니다
+          </h2>
+          <p className="text-sm text-amber-800 leading-relaxed">
+            자연어 검색은 Claude API를 호출하므로 사용량에 따라 운영비가 발생합니다.
+            이 데모 환경에서는 비활성화되어 있습니다.
+          </p>
+          <p className="text-sm text-amber-700 mt-3">
+            로컬 개발 환경에서 자체 Anthropic API 키를 등록하면 시연하실 수
+            있습니다. 자세한 내용은 README 또는 소스코드의 <code className="font-mono bg-amber-100 px-1 rounded">backend/src/routes/rag.js</code>{' '}
+            를 참고하세요.
+          </p>
+          <div className="mt-4">
+            <Link
+              to="/"
+              className="text-sm text-amber-900 underline hover:text-amber-700"
+            >
+              ← 일반 검색으로 돌아가기
+            </Link>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (

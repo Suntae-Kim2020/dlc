@@ -1,6 +1,8 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 
 import { getUserLoans, returnLoan } from '../../api/loans'
+import { READ_ONLY } from '../../config'
 
 // 날짜 표기 — ISO 8601의 앞 10자리(YYYY-MM-DD)만
 function fmt(d) {
@@ -120,6 +122,32 @@ export default function LoanPage() {
 
   const overdueCount = loans.filter((l) => !isReturned(l) && isOverdue(l)).length
   const activeCount = loans.filter((l) => !isReturned(l)).length
+
+  if (READ_ONLY) {
+    return (
+      <div className="space-y-4">
+        <h1 className="text-3xl font-bold text-slate-900">대출 현황</h1>
+        <div className="bg-slate-50 border border-slate-200 rounded-xl p-6">
+          <h2 className="text-lg font-semibold text-slate-900 mb-2">
+            데모 환경 — 검색 전용
+          </h2>
+          <p className="text-sm text-slate-600 leading-relaxed">
+            이 사이트는 디지털도서관 시스템의 <strong>공개 검색 데모</strong>입니다.
+            대출·반납과 같은 변경 작업은 비활성화되어 있고, 자료 검색·상세 조회만
+            제공됩니다.
+          </p>
+          <div className="mt-4">
+            <Link
+              to="/"
+              className="text-sm text-slate-700 underline hover:text-slate-900"
+            >
+              ← 검색으로 돌아가기
+            </Link>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div>

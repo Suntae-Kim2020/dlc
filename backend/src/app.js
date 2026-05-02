@@ -16,12 +16,37 @@ const { startScheduler } = require('./scheduler');
 
 const app = express();
 
-// CORS — 프론트엔드(http://localhost:3000)만 허용
+// CORS — dev는 localhost:3000, prod는 ALLOWED_ORIGIN 환경변수
 app.use(cors({
-  origin: 'http://localhost:3000',
+  origin: process.env.ALLOWED_ORIGIN || 'http://localhost:3000',
   credentials: true,
 }));
 app.use(express.json());
+
+// 읽기 전용 모드 — 운영(데모) 환경에서 모든 쓰기·RAG 차단
+const READ_ONLY = process.env.READ_ONLY_MODE === 'true';
+if (READ_ONLY) {
+  console.log('[app] READ_ONLY 모드 활성 — 쓰기 요청과 RAG는 거부됩니다.');
+
+  // RAG는 별도 메시지 (운영비 발생 안내)
+  app.use('/api/v1/rag', (_req, res) => {
+    res.status(503).json({
+      error: 'RAG(자연어 검색)는 운영비(Claude API 호출 비용) 발생으로 ' +
+             '이 데모 환경에서는 사용할 수 없습니다.',
+      hint: '로컬 개발 환경에서 자체 API 키로 시연해 보세요.',
+    });
+  });
+
+  // 그 외 모든 쓰기 요청 차단
+  app.use((req, res, next) => {
+    if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) {
+      return res.status(403).json({
+        error: '데모 환경 — 읽기 전용 모드입니다. 자료 변경 작업은 비활성화되어 있습니다.',
+      });
+    }
+    next();
+  });
+}
 
 // Swagger UI — 개발자 문서
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));

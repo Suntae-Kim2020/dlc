@@ -1,5 +1,7 @@
 import { NavLink } from 'react-router-dom'
 
+import { READ_ONLY } from '../config'
+
 const userLinks = [
   { to: '/', label: '검색', end: true },
   { to: '/loans', label: '대출현황' },
@@ -39,14 +41,22 @@ export default function NavBar() {
           ))}
         </div>
 
-        <div className="ml-auto flex items-center gap-1">
-          <span className="text-xs text-slate-400 mr-2">관리</span>
-          {adminLinks.map((l) => (
-            <NavLink key={l.to} to={l.to} end={l.end} className={linkClass}>
-              {l.label}
-            </NavLink>
-          ))}
-        </div>
+        {READ_ONLY ? (
+          <div className="ml-auto">
+            <span className="text-xs px-2 py-1 rounded bg-amber-100 text-amber-700">
+              데모 모드
+            </span>
+          </div>
+        ) : (
+          <div className="ml-auto flex items-center gap-1">
+            <span className="text-xs text-slate-400 mr-2">관리</span>
+            {adminLinks.map((l) => (
+              <NavLink key={l.to} to={l.to} end={l.end} className={linkClass}>
+                {l.label}
+              </NavLink>
+            ))}
+          </div>
+        )}
       </nav>
     </header>
   )
