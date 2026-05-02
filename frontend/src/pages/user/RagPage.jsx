@@ -1,8 +1,10 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 
 import { ragSearch } from '../../api/rag'
 import { READ_ONLY } from '../../config'
+
+const PWD_KEY = 'ragPassword'
 
 function Spinner() {
   return (
@@ -82,6 +84,32 @@ export default function RagPage() {
   const [result, setResult] = useState(null)
   const [error, setError] = useState(null)
 
+  // READ_ONLY 환경에서만 비밀번호 입력을 받음 (sessionStorage에 보관 — 탭 닫으면 사라짐)
+  const [password, setPassword] = useState('')
+  const [pwdInput, setPwdInput] = useState('')
+
+  useEffect(() => {
+    if (READ_ONLY) {
+      const cached = sessionStorage.getItem(PWD_KEY)
+      if (cached) setPassword(cached)
+    }
+  }, [])
+
+  function submitPassword(e) {
+    e.preventDefault()
+    const v = pwdInput.trim()
+    if (!v) return
+    setPassword(v)
+    sessionStorage.setItem(PWD_KEY, v)
+  }
+
+  function clearPassword() {
+    setPassword('')
+    sessionStorage.removeItem(PWD_KEY)
+    setResult(null)
+    setError(null)
+  }
+
   async function submit(e) {
     if (e) e.preventDefault()
     const q = question.trim()
@@ -92,10 +120,17 @@ export default function RagPage() {
     setResult(null)
 
     try {
-      const data = await ragSearch(q)
+      const data = await ragSearch(q, READ_ONLY ? password : undefined)
       setResult(data)
     } catch (err) {
-      setError(err.response?.data?.error || err.message)
+      const status = err.response?.status
+      // 비밀번호 오류면 캐시 삭제하고 다시 입력받기
+      if (status === 401 && READ_ONLY) {
+        clearPassword()
+        setError('비밀번호가 올바르지 않습니다. 다시 입력해 주세요.')
+      } else {
+        setError(err.response?.data?.error || err.message)
+      }
     } finally {
       setLoading(false)
     }
@@ -107,23 +142,44 @@ export default function RagPage() {
     }
   }
 
-  if (READ_ONLY) {
+  // READ_ONLY 환경에서 아직 비밀번호가 입력되지 않으면 비밀번호 입력 폼만 보여줌
+  if (READ_ONLY && !password) {
     return (
       <div className="space-y-4">
         <h1 className="text-3xl font-bold text-slate-900">AI 자연어 검색</h1>
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-6">
           <h2 className="text-lg font-semibold text-amber-900 mb-2">
-            ⚠ 비용 발생으로 사용할 수 없습니다
+            🔒 비밀번호가 필요합니다
           </h2>
-          <p className="text-sm text-amber-800 leading-relaxed">
-            자연어 검색은 Claude API를 호출하므로 사용량에 따라 운영비가 발생합니다.
-            이 데모 환경에서는 비활성화되어 있습니다.
+          <p className="text-sm text-amber-800 leading-relaxed mb-4">
+            AI 자연어 검색은 Claude API 호출 비용이 발생하므로, 인증된 사용자만
+            이용할 수 있습니다. 발급받은 비밀번호를 입력해 주세요.
           </p>
-          <p className="text-sm text-amber-700 mt-3">
-            로컬 개발 환경에서 자체 Anthropic API 키를 등록하면 시연하실 수
-            있습니다. 자세한 내용은 README 또는 소스코드의 <code className="font-mono bg-amber-100 px-1 rounded">backend/src/routes/rag.js</code>{' '}
-            를 참고하세요.
-          </p>
+
+          <form onSubmit={submitPassword} className="flex gap-2">
+            <input
+              type="password"
+              value={pwdInput}
+              onChange={(e) => setPwdInput(e.target.value)}
+              placeholder="비밀번호"
+              autoFocus
+              required
+              className="flex-1 px-4 py-2 text-base text-slate-900 bg-white border border-amber-300 rounded focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+            />
+            <button
+              type="submit"
+              className="px-6 py-2 bg-amber-700 text-white rounded font-medium hover:bg-amber-800 transition-colors"
+            >
+              인증
+            </button>
+          </form>
+
+          {error && (
+            <p className="mt-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded px-3 py-2">
+              {error}
+            </p>
+          )}
+
           <div className="mt-4">
             <Link
               to="/"
@@ -139,7 +195,17 @@ export default function RagPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold text-slate-900">AI 자연어 검색</h1>
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold text-slate-900">AI 자연어 검색</h1>
+        {READ_ONLY && password && (
+          <button
+            onClick={clearPassword}
+            className="text-xs text-slate-500 hover:text-slate-900 underline"
+          >
+            🔓 인증 해제
+          </button>
+        )}
+      </div>
 
       {/* 1. 안내 */}
       <div className="bg-slate-50 border border-slate-200 rounded-xl p-5">

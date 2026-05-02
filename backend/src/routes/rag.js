@@ -11,6 +11,20 @@ const anthropic = new Anthropic({ apiKey: process.env.CLAUDE_API_KEY });
 
 const CLAUDE_MODEL = 'claude-opus-4-7';
 
+// 운영 환경에서 RAG 사용을 비밀번호로 통제 (Claude API 비용 보호)
+// .env에 RAG_PASSWORD가 설정돼 있으면 X-RAG-Password 헤더 또는 body.password로 일치 검증
+const RAG_PASSWORD = process.env.RAG_PASSWORD;
+
+function requireRagPassword(req, res, next) {
+  if (!RAG_PASSWORD) return next(); // 비밀번호 미설정 시 인증 생략 (dev)
+  const provided = req.get('X-RAG-Password') || req.body?.password;
+  if (provided && provided === RAG_PASSWORD) return next();
+  return res.status(401).json({
+    error: 'RAG 검색은 비밀번호가 필요합니다.',
+    hint: 'X-RAG-Password 헤더 또는 요청 body의 password 필드에 비밀번호를 전달하세요.',
+  });
+}
+
 function validate(req, res) {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -130,6 +144,7 @@ ${question}`;
 // -------------------------------------------------------
 router.post(
   '/search',
+  requireRagPassword,
   [
     body('question')
       .trim()

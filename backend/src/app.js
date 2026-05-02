@@ -23,22 +23,16 @@ app.use(cors({
 }));
 app.use(express.json());
 
-// 읽기 전용 모드 — 운영(데모) 환경에서 모든 쓰기·RAG 차단
+// 읽기 전용 모드 — 운영(데모) 환경에서 쓰기 작업 차단
+// RAG는 별도 비밀번호 검증으로 통제 (rag.js의 미들웨어 참고)
 const READ_ONLY = process.env.READ_ONLY_MODE === 'true';
 if (READ_ONLY) {
-  console.log('[app] READ_ONLY 모드 활성 — 쓰기 요청과 RAG는 거부됩니다.');
+  console.log('[app] READ_ONLY 모드 활성 — 쓰기 요청 차단 (RAG는 비밀번호로 별도 통제).');
 
-  // RAG는 별도 메시지 (운영비 발생 안내)
-  app.use('/api/v1/rag', (_req, res) => {
-    res.status(503).json({
-      error: 'RAG(자연어 검색)는 운영비(Claude API 호출 비용) 발생으로 ' +
-             '이 데모 환경에서는 사용할 수 없습니다.',
-      hint: '로컬 개발 환경에서 자체 API 키로 시연해 보세요.',
-    });
-  });
-
-  // 그 외 모든 쓰기 요청 차단
   app.use((req, res, next) => {
+    // RAG는 자체 인증을 가지므로 READ_ONLY 검사에서 제외
+    if (req.path.startsWith('/api/v1/rag')) return next();
+
     if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) {
       return res.status(403).json({
         error: '데모 환경 — 읽기 전용 모드입니다. 자료 변경 작업은 비활성화되어 있습니다.',
