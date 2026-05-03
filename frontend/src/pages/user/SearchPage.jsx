@@ -24,36 +24,36 @@ function BibCard({ bib, onClick }) {
   return (
     <article
       onClick={() => onClick(id)}
-      className="group bg-white rounded-xl border border-slate-200 p-5 cursor-pointer transition-all hover:shadow-lg hover:border-sky-300 hover:-translate-y-0.5"
+      className="group bg-white border border-neutral-200 rounded-md p-5 cursor-pointer transition-all hover:border-neutral-900 hover:shadow-sm"
     >
-      <h3 className="text-base sm:text-lg font-semibold text-slate-900 mb-1 line-clamp-2 group-hover:text-sky-700 transition-colors">
+      <h3 className="text-base sm:text-lg font-semibold text-neutral-900 mb-1 line-clamp-2 group-hover:text-indigo-600 transition-colors">
         {src.title || '(제목 없음)'}
       </h3>
-      <p className="text-sm text-slate-600 mb-3">{author}</p>
+      <p className="text-sm text-neutral-600 mb-3">{author}</p>
 
-      <dl className="text-xs text-slate-500 grid grid-cols-2 gap-x-3 gap-y-1">
+      <dl className="text-xs text-neutral-500 grid grid-cols-2 gap-x-3 gap-y-1">
         <div className="truncate">
-          <dt className="inline text-slate-400">출판사 </dt>
-          <dd className="inline text-slate-700">{src.publisher || '-'}</dd>
+          <dt className="inline text-neutral-400">출판사 </dt>
+          <dd className="inline text-neutral-700">{src.publisher || '-'}</dd>
         </div>
         <div>
-          <dt className="inline text-slate-400">발행년 </dt>
-          <dd className="inline text-slate-700">{src.pub_year || '-'}</dd>
+          <dt className="inline text-neutral-400">발행년 </dt>
+          <dd className="inline text-neutral-700">{src.pub_year || '-'}</dd>
         </div>
         <div className="col-span-2 truncate">
-          <dt className="inline text-slate-400">청구기호 </dt>
-          <dd className="inline font-mono text-slate-700">
+          <dt className="inline text-neutral-400">청구기호 </dt>
+          <dd className="inline font-mono text-neutral-700">
             {src.call_number || '-'}
           </dd>
         </div>
       </dl>
 
-      <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-100">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+      <div className="mt-4 pt-3 border-t border-neutral-100 flex items-center justify-between">
+        <span className="inline-flex items-center gap-1.5 text-xs font-medium text-neutral-600">
+          <span className="w-1.5 h-1.5 rounded-full bg-neutral-900"></span>
           대출 가능
         </span>
-        <span className="text-xs text-slate-400 font-mono">{id}</span>
+        <span className="text-xs text-neutral-400 font-mono">{id}</span>
       </div>
     </article>
   )
@@ -205,29 +205,29 @@ export default function SearchPage() {
 
   return (
     <div>
-      {/* 검색창 — 모바일에선 input·버튼이 한 줄에 fit, 큰 화면에선 살짝 더 여유 */}
+      {/* 검색창 */}
       <form
         onSubmit={submit}
-        className="bg-white border border-slate-200 rounded-2xl p-3 sm:p-4 shadow-sm mb-4 flex gap-2"
+        className="bg-white border border-neutral-200 rounded-md p-2 mb-4 flex gap-2 focus-within:border-neutral-900 transition-colors"
       >
         <input
           type="search"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="책 제목, 저자, 주제어로 검색"
-          className="flex-1 min-w-0 px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base text-slate-900 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 focus:bg-white focus:border-transparent transition-all"
+          className="flex-1 min-w-0 px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base text-neutral-900 bg-transparent border-0 focus:outline-none placeholder:text-neutral-400"
           autoFocus
         />
         <button
           type="submit"
-          className="px-4 sm:px-6 py-2.5 sm:py-3 bg-slate-900 text-white text-sm sm:text-base rounded-xl font-medium hover:bg-slate-800 transition-colors whitespace-nowrap"
+          className="px-4 sm:px-6 py-2.5 sm:py-3 bg-neutral-900 text-white text-sm sm:text-base rounded-md font-medium hover:bg-neutral-800 transition-colors whitespace-nowrap"
         >
           검색
         </button>
       </form>
 
-      {/* 검색 유형 탭 — 모바일에서 가로 스크롤 가능 */}
-      <div className="flex gap-1 mb-6 border-b border-slate-200 overflow-x-auto -mx-1 px-1">
+      {/* 검색 유형 탭 */}
+      <div className="flex gap-1 mb-6 border-b border-neutral-200 overflow-x-auto -mx-1 px-1">
         {FIELD_TABS.map((t) => {
           const active = field === t.key
           return (
@@ -237,8 +237,8 @@ export default function SearchPage() {
               className={[
                 'px-4 py-2 text-sm font-medium border-b-2 transition-colors -mb-px whitespace-nowrap',
                 active
-                  ? 'border-sky-600 text-sky-700'
-                  : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300',
+                  ? 'border-neutral-900 text-neutral-900'
+                  : 'border-transparent text-neutral-500 hover:text-neutral-900 hover:border-neutral-300',
               ].join(' ')}
             >
               {t.label}

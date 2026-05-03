@@ -18,10 +18,10 @@ const adminSubLinks = [
 
 function linkClass({ isActive }) {
   return [
-    'px-3 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap',
+    'px-3 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap',
     isActive
-      ? 'bg-slate-900 text-white shadow-sm'
-      : 'text-slate-700 hover:bg-slate-100',
+      ? 'bg-neutral-900 text-white'
+      : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100',
   ].join(' ')
 }
 
@@ -29,27 +29,27 @@ export default function NavBar() {
   const demoBuild = isDemoBuild()
 
   return (
-    <header className="border-b border-slate-200 bg-white/80 backdrop-blur sticky top-0 z-20">
+    <header className="border-b border-neutral-200 bg-white/90 backdrop-blur sticky top-0 z-20">
       <nav className="max-w-6xl mx-auto px-4 py-3">
-        {/* 첫 줄 — 로고 + 우측 도구 (모바일에선 한 줄에 압축) */}
+        {/* 첫 줄 — 로고 + 우측 도구 */}
         <div className="flex items-center justify-between gap-3">
           <NavLink
             to="/"
-            className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight whitespace-nowrap"
+            className="text-base sm:text-lg font-semibold text-neutral-900 tracking-tight whitespace-nowrap"
           >
-            <span className="text-sky-600">AI</span> Library
+            AI Library<span className="text-indigo-600">.</span>
           </NavLink>
 
-          <div className="flex items-center gap-2 flex-wrap justify-end">
+          <div className="flex items-center gap-3 flex-wrap justify-end">
             <ModeToggle />
             <NavLink
               to="/admin"
               className={({ isActive }) =>
                 [
-                  'text-xs sm:text-sm font-medium px-3 py-1.5 rounded-full whitespace-nowrap transition-colors',
+                  'text-xs sm:text-sm font-medium px-3 py-1.5 rounded-md whitespace-nowrap transition-colors',
                   isActive
-                    ? 'bg-slate-900 text-white'
-                    : 'text-slate-700 border border-slate-200 hover:bg-slate-100',
+                    ? 'bg-neutral-900 text-white'
+                    : 'text-neutral-700 border border-neutral-200 hover:bg-neutral-100',
                 ].join(' ')
               }
             >
@@ -58,18 +58,17 @@ export default function NavBar() {
           </div>
         </div>
 
-        {/* 둘째 줄 — 사용자 메뉴 (모바일에서도 한 줄에 가로 스크롤 없이 fit) */}
-        <div className="flex items-center gap-1 mt-2 -mx-1 overflow-x-auto">
+        {/* 둘째 줄 — 사용자 메뉴 */}
+        <div className="flex items-center gap-1 mt-2 -mx-1 overflow-x-auto px-1">
           {userLinks.map((l) => (
             <NavLink key={l.to} to={l.to} end={l.end} className={linkClass}>
               {l.label}
             </NavLink>
           ))}
 
-          {/* dev 빌드(=데모 빌드 아님)인 경우에만 NavBar에 관리자 sublinks 표시 */}
           {!demoBuild && (
             <div className="ml-auto flex items-center gap-1">
-              <span className="text-xs text-slate-400 px-2 hidden sm:inline">
+              <span className="text-xs text-neutral-400 px-2 hidden sm:inline">
                 관리
               </span>
               {adminSubLinks.map((l) => (

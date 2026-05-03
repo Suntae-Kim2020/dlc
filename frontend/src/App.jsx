@@ -18,7 +18,7 @@ import NotFoundPage from './pages/NotFoundPage'
 // 이용자 영역 — 전역 NavBar + 본문 컨테이너
 function UserShell() {
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800">
+    <div className="min-h-screen bg-white text-neutral-900">
       <NavBar />
       <main className="max-w-6xl mx-auto px-4 py-8">
         <Outlet />

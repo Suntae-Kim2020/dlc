@@ -30,19 +30,18 @@ function UnlockModal({ onCancel, onSuccess }) {
 
   return (
     <div
-      className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+      className="fixed inset-0 bg-neutral-900/70 backdrop-blur-sm flex items-center justify-center z-50 p-4"
       onClick={onCancel}
     >
       <form
         onSubmit={handleSubmit}
         onClick={(e) => e.stopPropagation()}
-        className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 sm:p-8"
+        className="bg-white rounded-lg shadow-xl border border-neutral-200 max-w-md w-full p-6 sm:p-8"
       >
-        <div className="flex items-center gap-3 mb-2">
-          <span className="text-2xl">🔓</span>
-          <h3 className="text-xl font-semibold text-slate-900">활성 모드 전환</h3>
-        </div>
-        <p className="text-sm text-slate-500 leading-relaxed mb-5">
+        <h3 className="text-lg font-semibold text-neutral-900 mb-1">
+          활성 모드 전환
+        </h3>
+        <p className="text-sm text-neutral-500 leading-relaxed mb-5">
           관리자 비밀번호를 입력하면 자료 등록·수정·삭제와 AI 자연어 검색이
           모두 가능해집니다. 인증은 브라우저 탭을 닫을 때까지만 유지됩니다.
         </p>
@@ -55,11 +54,11 @@ function UnlockModal({ onCancel, onSuccess }) {
           autoFocus
           required
           autoComplete="current-password"
-          className="w-full px-4 py-3 text-base text-slate-900 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+          className="w-full px-4 py-2.5 text-base text-neutral-900 bg-white border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
         />
 
         {error && (
-          <p className="mt-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+          <p className="mt-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded-md px-3 py-2">
             {error}
           </p>
         )}
@@ -69,16 +68,16 @@ function UnlockModal({ onCancel, onSuccess }) {
             type="button"
             onClick={onCancel}
             disabled={busy}
-            className="flex-1 px-4 py-2.5 border border-slate-300 rounded-lg text-slate-700 font-medium hover:bg-slate-50 disabled:opacity-50 transition-colors"
+            className="flex-1 px-4 py-2.5 border border-neutral-300 rounded-md text-neutral-700 font-medium hover:bg-neutral-50 disabled:opacity-50 transition-colors"
           >
             취소
           </button>
           <button
             type="submit"
             disabled={busy || !password}
-            className="flex-1 px-4 py-2.5 bg-slate-900 text-white rounded-lg font-medium hover:bg-slate-800 disabled:opacity-50 transition-colors"
+            className="flex-1 px-4 py-2.5 bg-neutral-900 text-white rounded-md font-medium hover:bg-neutral-800 disabled:opacity-50 transition-colors"
           >
-            {busy ? '확인 중…' : '활성 모드 전환'}
+            {busy ? '확인 중…' : '확인'}
           </button>
         </div>
       </form>
@@ -120,19 +119,19 @@ export default function ModeToggle() {
         type="button"
         onClick={handleToggle}
         title={admin ? '클릭해서 데모 모드로' : '클릭해서 활성 모드로'}
-        className="group inline-flex items-center gap-2.5 select-none cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 rounded-full px-1.5 py-1"
+        className="group inline-flex items-center gap-2.5 select-none cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded-md px-1.5 py-1"
       >
         {/* 라벨 + 점 */}
         <span
           className={[
             'inline-flex items-center gap-1.5 text-xs font-medium whitespace-nowrap transition-colors',
-            admin ? 'text-emerald-700' : 'text-amber-700',
+            admin ? 'text-neutral-900' : 'text-neutral-500',
           ].join(' ')}
         >
           <span
             className={[
               'inline-block w-1.5 h-1.5 rounded-full',
-              admin ? 'bg-emerald-500 animate-pulse' : 'bg-amber-400',
+              admin ? 'bg-indigo-500 animate-pulse' : 'bg-neutral-300',
             ].join(' ')}
           />
           {admin ? '활성 모드' : '데모 모드'}
@@ -143,16 +142,16 @@ export default function ModeToggle() {
           role="switch"
           aria-checked={admin}
           className={[
-            'relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors',
+            'relative inline-flex h-5 w-9 flex-shrink-0 items-center rounded-full transition-colors',
             admin
-              ? 'bg-emerald-500 group-hover:bg-emerald-600'
-              : 'bg-slate-300 group-hover:bg-slate-400',
+              ? 'bg-neutral-900 group-hover:bg-neutral-800'
+              : 'bg-neutral-200 group-hover:bg-neutral-300',
           ].join(' ')}
         >
           <span
             className={[
-              'inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform',
-              admin ? 'translate-x-5' : 'translate-x-0.5',
+              'inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform',
+              admin ? 'translate-x-4' : 'translate-x-0.5',
             ].join(' ')}
           />
         </span>
