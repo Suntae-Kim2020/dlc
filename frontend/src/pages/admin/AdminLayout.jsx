@@ -1,6 +1,7 @@
 import { Link, NavLink, Outlet } from 'react-router-dom'
 
 import { isReadOnly } from '../../config'
+import ModeToggle from '../../components/ModeToggle'
 
 const ADMIN_LINKS = [
   { to: '/admin', label: '대시보드', icon: '📊', end: true },
@@ -14,54 +15,71 @@ function sidebarLinkClass({ isActive }) {
   return [
     'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
     isActive
-      ? 'bg-slate-900 text-white'
+      ? 'bg-slate-900 text-white shadow-sm'
       : 'text-slate-700 hover:bg-slate-100',
   ].join(' ')
 }
 
 function mobileLinkClass({ isActive }) {
   return [
-    'flex-shrink-0 px-3 py-1.5 rounded text-xs font-medium whitespace-nowrap transition-colors',
+    'flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors',
     isActive
       ? 'bg-slate-900 text-white'
-      : 'text-slate-600 hover:bg-slate-100',
+      : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50',
   ].join(' ')
 }
 
 export default function AdminLayout() {
+  const readOnly = isReadOnly()
+
   return (
     <div className="min-h-screen flex flex-col bg-slate-50">
-      {/* 1. 상단 헤더 */}
-      <header className="bg-slate-900 text-white px-6 py-4 flex items-center justify-between">
-        <h1 className="text-lg font-semibold">AI Library 관리자</h1>
-        <Link
-          to="/"
-          className="text-sm text-slate-300 hover:text-white transition-colors"
-        >
-          ← 이용자 화면으로 돌아가기
-        </Link>
+      {/* 1. 상단 헤더 — light theme로 일관성 */}
+      <header className="bg-white border-b border-slate-200 sticky top-0 z-20">
+        <div className="px-4 sm:px-6 py-3 flex items-center justify-between gap-3 flex-wrap">
+          <div className="flex items-center gap-2">
+            <span className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
+              <span className="text-sky-600">AI</span> Library
+            </span>
+            <span className="text-sm text-slate-400">/</span>
+            <span className="text-sm font-medium text-slate-600">관리자</span>
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap justify-end">
+            <ModeToggle />
+            <Link
+              to="/"
+              className="text-xs sm:text-sm font-medium px-3 py-1.5 rounded-full text-slate-700 border border-slate-200 hover:bg-slate-100 transition-colors whitespace-nowrap"
+            >
+              ← 이용자 화면
+            </Link>
+          </div>
+        </div>
+
+        {/* 모바일용 가로 네비게이션 (md 미만) */}
+        <nav className="md:hidden border-t border-slate-100 px-4 py-2 flex gap-2 overflow-x-auto">
+          {ADMIN_LINKS.map((link) => (
+            <NavLink
+              key={link.to}
+              to={link.to}
+              end={link.end}
+              className={mobileLinkClass}
+            >
+              <span className="mr-1">{link.icon}</span>
+              {link.label}
+            </NavLink>
+          ))}
+        </nav>
       </header>
 
-      {isReadOnly() && (
-        <div className="bg-amber-100 border-b border-amber-200 px-6 py-3 text-sm text-amber-900">
-          <strong>⚠ 데모 모드</strong> — 모든 변경 작업(등록·수정·삭제·반납·수령)이
-          비활성화되어 있습니다. 화면 구성과 데이터 흐름만 살펴볼 수 있습니다.
+      {/* 데모 모드 배너 (활성 모드면 사라짐) */}
+      {readOnly && (
+        <div className="bg-amber-50 border-b border-amber-200 px-4 sm:px-6 py-3 text-sm text-amber-900">
+          <strong>⚠ 데모 모드</strong> — 모든 변경 작업이 비활성화되어 있습니다.
+          상단 <strong>[활성 모드 전환]</strong> 버튼으로 비밀번호를 입력하면
+          모든 기능을 사용할 수 있습니다.
         </div>
       )}
-
-      {/* 모바일용 가로 네비게이션 (md 미만) */}
-      <nav className="md:hidden bg-white border-b border-slate-200 px-4 py-2 flex gap-1 overflow-x-auto">
-        {ADMIN_LINKS.map((link) => (
-          <NavLink
-            key={link.to}
-            to={link.to}
-            end={link.end}
-            className={mobileLinkClass}
-          >
-            {link.icon} {link.label}
-          </NavLink>
-        ))}
-      </nav>
 
       <div className="flex-1 flex">
         {/* 2. 좌측 사이드바 (데스크톱) */}
@@ -82,16 +100,17 @@ export default function AdminLayout() {
             ))}
           </nav>
 
-          {/* 인증 미구현 경고 — 학습 환경에서 항상 노출 */}
-          <p className="mt-8 px-3 py-3 text-xs leading-relaxed text-amber-800 bg-amber-50 border border-amber-200 rounded-lg">
-            <strong className="block mb-1">⚠ 인증 미구현</strong>
-            현재 관리자 페이지는 누구나 접근할 수 있습니다. 운영 환경에서는
-            반드시 로그인·권한 검증을 추가하세요.
-          </p>
+          {readOnly && (
+            <div className="mt-8 px-3 py-3 text-xs leading-relaxed text-amber-800 bg-amber-50 border border-amber-200 rounded-lg">
+              <strong className="block mb-1">⚠ 인증 미완료</strong>
+              현재 데모 모드입니다. 헤더의 [활성 모드 전환] 버튼으로
+              비밀번호를 입력해 모든 관리 기능을 활성화하세요.
+            </div>
+          )}
         </aside>
 
         {/* 3. 콘텐츠 영역 */}
-        <main className="flex-1 p-6 md:p-8 overflow-x-hidden">
+        <main className="flex-1 p-4 sm:p-6 md:p-8 overflow-x-hidden">
           <Outlet />
         </main>
       </div>
