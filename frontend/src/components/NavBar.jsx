@@ -42,10 +42,16 @@ export default function NavBar() {
         </div>
 
         {READ_ONLY ? (
-          <div className="ml-auto">
+          <div className="ml-auto flex items-center gap-2">
             <span className="text-xs px-2 py-1 rounded bg-amber-100 text-amber-700">
               데모 모드
             </span>
+            <NavLink
+              to="/admin"
+              className="text-sm font-medium px-3 py-2 rounded-md text-slate-700 hover:bg-slate-200 transition-colors"
+            >
+              관리자 →
+            </NavLink>
           </div>
         ) : (
           <div className="ml-auto flex items-center gap-1">
