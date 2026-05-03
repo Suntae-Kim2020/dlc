@@ -12,6 +12,7 @@ const ragRouter = require('./routes/rag');
 const oaiRouter = require('./routes/oai');
 const lodRouter = require('./routes/lod');
 const adminRouter = require('./routes/admin');
+const sparqlRouter = require('./routes/sparql');
 const swaggerSpec = require('./swagger');
 const { startScheduler } = require('./scheduler');
 
@@ -38,6 +39,9 @@ if (READ_ONLY) {
   app.use((req, res, next) => {
     // RAG는 자체 검증 (X-RAG-Password 또는 X-Admin-Token)
     if (req.path.startsWith('/api/v1/rag')) return next();
+
+    // SPARQL query는 read-only이므로 통과 (update는 라우터 안에서 별도 검증)
+    if (req.path === '/api/v1/sparql/query') return next();
 
     // unlock 엔드포인트 자체는 통과 — 비밀번호 검증은 그 안에서
     if (req.path === '/api/v1/admin/unlock') return next();
@@ -70,6 +74,7 @@ app.use('/api/v1/e-resources', eresourcesRouter);
 app.use('/api/v1/search', searchRouter);
 app.use('/api/v1/rag', ragRouter);
 app.use('/api/v1/admin', adminRouter);
+app.use('/api/v1/sparql', sparqlRouter);
 
 // OAI-PMH 데이터 제공자 (표준상 baseURL은 버전 prefix 없이 노출)
 app.use('/oai', oaiRouter);
