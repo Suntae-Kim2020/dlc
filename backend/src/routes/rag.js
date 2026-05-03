@@ -11,17 +11,23 @@ const anthropic = new Anthropic({ apiKey: process.env.CLAUDE_API_KEY });
 
 const CLAUDE_MODEL = 'claude-opus-4-7';
 
-// 운영 환경에서 RAG 사용을 비밀번호로 통제 (Claude API 비용 보호)
-// .env에 RAG_PASSWORD가 설정돼 있으면 X-RAG-Password 헤더 또는 body.password로 일치 검증
+// RAG 비용 보호 — X-Admin-Token 또는 X-RAG-Password 둘 중 하나로 인증
+// (활성 모드 전환 시 메인 NavBar가 sessionStorage에 토큰 저장 → 모든 요청에 자동 첨부)
 const RAG_PASSWORD = process.env.RAG_PASSWORD;
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || RAG_PASSWORD;
 
 function requireRagPassword(req, res, next) {
-  if (!RAG_PASSWORD) return next(); // 비밀번호 미설정 시 인증 생략 (dev)
-  const provided = req.get('X-RAG-Password') || req.body?.password;
-  if (provided && provided === RAG_PASSWORD) return next();
+  if (!RAG_PASSWORD && !ADMIN_PASSWORD) return next(); // dev — 인증 생략
+  const provided =
+    req.get('X-Admin-Token') ||
+    req.get('X-RAG-Password') ||
+    req.body?.password;
+  if (provided && (provided === RAG_PASSWORD || provided === ADMIN_PASSWORD)) {
+    return next();
+  }
   return res.status(401).json({
-    error: 'RAG 검색은 비밀번호가 필요합니다.',
-    hint: 'X-RAG-Password 헤더 또는 요청 body의 password 필드에 비밀번호를 전달하세요.',
+    error: 'RAG 검색은 활성 모드에서만 사용 가능합니다.',
+    hint: '메인 화면의 [활성 모드 전환] 버튼으로 비밀번호를 입력하세요.',
   });
 }
 

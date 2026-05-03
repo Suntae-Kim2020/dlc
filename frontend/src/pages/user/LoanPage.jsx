@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 
 import { getUserLoans, returnLoan } from '../../api/loans'
-import { READ_ONLY } from '../../config'
+import { isReadOnly } from '../../config'
 
 // 날짜 표기 — ISO 8601의 앞 10자리(YYYY-MM-DD)만
 function fmt(d) {
@@ -123,7 +123,7 @@ export default function LoanPage() {
   const overdueCount = loans.filter((l) => !isReturned(l) && isOverdue(l)).length
   const activeCount = loans.filter((l) => !isReturned(l)).length
 
-  if (READ_ONLY) {
+  if (isReadOnly()) {
     return (
       <div className="space-y-4">
         <h1 className="text-3xl font-bold text-slate-900">대출 현황</h1>

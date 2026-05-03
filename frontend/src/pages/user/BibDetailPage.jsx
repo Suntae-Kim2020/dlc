@@ -4,7 +4,7 @@ import { Link, useParams } from 'react-router-dom'
 import { getBib, getBibItems } from '../../api/bibs'
 import { createLoan } from '../../api/loans'
 import { getLinkedData } from '../../api/lod'
-import { READ_ONLY } from '../../config'
+import { isReadOnly } from '../../config'
 
 const SAME_AS = 'http://www.w3.org/2002/07/owl#sameAs'
 
@@ -366,7 +366,7 @@ export default function BibDetailPage() {
                         )}
                       </td>
                       <td className="py-3 px-2 text-right">
-                        {avail && !READ_ONLY && (
+                        {avail && !isReadOnly() && (
                           <button
                             onClick={() => setLoanItem(it)}
                             className="px-3 py-1.5 text-sm bg-slate-900 text-white rounded hover:bg-slate-800"
@@ -374,7 +374,7 @@ export default function BibDetailPage() {
                             대출 신청
                           </button>
                         )}
-                        {avail && READ_ONLY && (
+                        {avail && isReadOnly() && (
                           <span className="text-xs text-slate-400">
                             데모 — 대출 비활성
                           </span>

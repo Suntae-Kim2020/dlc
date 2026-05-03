@@ -1,6 +1,6 @@
 import { Link, NavLink, Outlet } from 'react-router-dom'
 
-import { READ_ONLY } from '../../config'
+import { isReadOnly } from '../../config'
 
 const ADMIN_LINKS = [
   { to: '/admin', label: '대시보드', icon: '📊', end: true },
@@ -42,7 +42,7 @@ export default function AdminLayout() {
         </Link>
       </header>
 
-      {READ_ONLY && (
+      {isReadOnly() && (
         <div className="bg-amber-100 border-b border-amber-200 px-6 py-3 text-sm text-amber-900">
           <strong>⚠ 데모 모드</strong> — 모든 변경 작업(등록·수정·삭제·반납·수령)이
           비활성화되어 있습니다. 화면 구성과 데이터 흐름만 살펴볼 수 있습니다.

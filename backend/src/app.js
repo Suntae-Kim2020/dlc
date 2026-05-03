@@ -11,6 +11,7 @@ const searchRouter = require('./routes/search');
 const ragRouter = require('./routes/rag');
 const oaiRouter = require('./routes/oai');
 const lodRouter = require('./routes/lod');
+const adminRouter = require('./routes/admin');
 const swaggerSpec = require('./swagger');
 const { startScheduler } = require('./scheduler');
 
@@ -23,19 +24,33 @@ app.use(cors({
 }));
 app.use(express.json());
 
-// 읽기 전용 모드 — 운영(데모) 환경에서 쓰기 작업 차단
-// RAG는 별도 비밀번호 검증으로 통제 (rag.js의 미들웨어 참고)
+// 읽기 전용 모드 — 데모 환경에서 쓰기·RAG 차단
+// 활성 모드 전환: X-Admin-Token 헤더에 ADMIN_PASSWORD를 보내면 통과
+// (admin.js의 unlock 엔드포인트로 검증 후 클라이언트가 sessionStorage에 저장)
 const READ_ONLY = process.env.READ_ONLY_MODE === 'true';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || process.env.RAG_PASSWORD;
+
 if (READ_ONLY) {
-  console.log('[app] READ_ONLY 모드 활성 — 쓰기 요청 차단 (RAG는 비밀번호로 별도 통제).');
+  console.log(
+    '[app] READ_ONLY 모드 활성 — 쓰기/RAG는 X-Admin-Token 헤더로 통제',
+  );
 
   app.use((req, res, next) => {
-    // RAG는 자체 인증을 가지므로 READ_ONLY 검사에서 제외
+    // RAG는 자체 검증 (X-RAG-Password 또는 X-Admin-Token)
     if (req.path.startsWith('/api/v1/rag')) return next();
 
+    // unlock 엔드포인트 자체는 통과 — 비밀번호 검증은 그 안에서
+    if (req.path === '/api/v1/admin/unlock') return next();
+
+    // 쓰기 요청 — X-Admin-Token 검증
     if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) {
+      const token = req.get('X-Admin-Token');
+      if (ADMIN_PASSWORD && token === ADMIN_PASSWORD) {
+        return next(); // 활성 모드 — 쓰기 허용
+      }
       return res.status(403).json({
-        error: '데모 환경 — 읽기 전용 모드입니다. 자료 변경 작업은 비활성화되어 있습니다.',
+        error: '데모 모드 — 활성 모드 전환이 필요합니다.',
+        hint: '메인 화면에서 [활성 모드 전환] 버튼으로 비밀번호를 입력하세요.',
       });
     }
     next();
@@ -54,6 +69,7 @@ app.use('/api/v1/acquisitions', acquisitionsRouter);
 app.use('/api/v1/e-resources', eresourcesRouter);
 app.use('/api/v1/search', searchRouter);
 app.use('/api/v1/rag', ragRouter);
+app.use('/api/v1/admin', adminRouter);
 
 // OAI-PMH 데이터 제공자 (표준상 baseURL은 버전 prefix 없이 노출)
 app.use('/oai', oaiRouter);
