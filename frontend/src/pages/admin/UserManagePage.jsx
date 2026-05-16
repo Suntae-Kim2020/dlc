@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
-import { createUser, getUser } from '../../api/users'
+import { createUser, getUser, getUsers } from '../../api/users'
 
 const USER_TYPES = [
   { value: 'student', label: '학생' },
@@ -93,11 +93,36 @@ export default function UserManagePage() {
   const [user, setUser] = useState(null)
   const [searchLoading, setSearchLoading] = useState(false)
 
+  // 목록
+  const [list, setList] = useState([])
+  const [listLoading, setListLoading] = useState(true)
+  const [listError, setListError] = useState(null)
+  const [listQuery, setListQuery] = useState('')
+  const [listTotal, setListTotal] = useState(0)
+
   // 등록
   const [form, setForm] = useState(EMPTY_FORM)
   const [createBusy, setCreateBusy] = useState(false)
 
   const [toast, setToast] = useState(null)
+
+  async function loadList(q = '') {
+    setListLoading(true)
+    setListError(null)
+    try {
+      const data = await getUsers({ q, limit: 20 })
+      setList(data.data || [])
+      setListTotal(data.total || 0)
+    } catch (err) {
+      setListError(err.response?.data?.error || err.message)
+    } finally {
+      setListLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    loadList('')
+  }, [])
 
   function flashToast(type, message) {
     setToast({ type, message })
@@ -148,6 +173,7 @@ export default function UserManagePage() {
         `이용자 등록 완료${result?.id ? ` (#${result.id})` : ''}`,
       )
       setForm(EMPTY_FORM)
+      loadList(listQuery)
     } catch (err) {
       flashToast('error', err.response?.data?.error || err.message)
     } finally {
@@ -175,6 +201,105 @@ export default function UserManagePage() {
           {toast.message}
         </div>
       )}
+
+      {/* 0. 이용자 목록 */}
+      <section className="bg-white border border-slate-200 rounded-xl p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-slate-900">
+            이용자 목록{' '}
+            <span className="text-sm font-normal text-slate-500">
+              (총 {listTotal}명)
+            </span>
+          </h3>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault()
+              loadList(listQuery)
+            }}
+            className="flex gap-2"
+          >
+            <input
+              type="text"
+              value={listQuery}
+              onChange={(e) => setListQuery(e.target.value)}
+              placeholder="이름·학번·이메일"
+              className="px-3 py-1.5 text-sm border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent"
+            />
+            <button
+              type="submit"
+              className="px-3 py-1.5 text-sm bg-slate-900 text-white rounded hover:bg-slate-800"
+            >
+              검색
+            </button>
+          </form>
+        </div>
+
+        {listError && (
+          <p className="text-sm text-red-700 bg-red-50 border border-red-200 px-3 py-2 rounded">
+            {listError}
+          </p>
+        )}
+
+        {listLoading ? (
+          <p className="text-sm text-slate-400 py-6 text-center">
+            불러오는 중…
+          </p>
+        ) : list.length === 0 ? (
+          <p className="text-sm text-slate-500 py-6 text-center">
+            이용자가 없습니다.
+          </p>
+        ) : (
+          <div className="overflow-x-auto -mx-2">
+            <table className="w-full text-sm">
+              <thead className="text-xs text-slate-500 bg-slate-50 border-y border-slate-200">
+                <tr>
+                  <th className="text-left py-2 px-3 font-medium">#</th>
+                  <th className="text-left py-2 px-3 font-medium">학번/번호</th>
+                  <th className="text-left py-2 px-3 font-medium">이름</th>
+                  <th className="text-left py-2 px-3 font-medium">소속</th>
+                  <th className="text-left py-2 px-3 font-medium">유형</th>
+                  <th className="text-left py-2 px-3 font-medium">상태</th>
+                  <th className="text-left py-2 px-3 font-medium">가입일</th>
+                </tr>
+              </thead>
+              <tbody>
+                {list.map((u) => (
+                  <tr
+                    key={u.id}
+                    className="border-b border-slate-100 last:border-b-0 hover:bg-slate-50 cursor-pointer"
+                    onClick={() => {
+                      setSearchId(String(u.id))
+                      getUser(u.id).then(setUser).catch(() => {})
+                    }}
+                  >
+                    <td className="py-2 px-3 font-mono text-xs text-slate-400">
+                      {u.id}
+                    </td>
+                    <td className="py-2 px-3 font-mono text-slate-700">
+                      {u.user_number}
+                    </td>
+                    <td className="py-2 px-3 font-medium text-slate-900">
+                      {u.name}
+                    </td>
+                    <td className="py-2 px-3 text-slate-600">
+                      {u.affiliation || '-'}
+                    </td>
+                    <td className="py-2 px-3">
+                      <UserTypeBadge type={u.user_type} />
+                    </td>
+                    <td className="py-2 px-3">
+                      <StatusBadge status={u.status} />
+                    </td>
+                    <td className="py-2 px-3 font-mono text-xs text-slate-500">
+                      {u.join_date && String(u.join_date).slice(0, 10)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
 
       {/* 1. 이용자 조회 */}
       <section className="bg-white border border-slate-200 rounded-xl p-6">

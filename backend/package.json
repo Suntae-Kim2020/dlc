@@ -16,7 +16,9 @@
     "express-validator": "^7.2.1",
     "fast-xml-parser": "^5.7.2",
     "node-cron": "^4.2.1",
-    "pg": "^8.13.1"
+    "pg": "^8.13.1",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1"
   },
   "devDependencies": {
     "nodemon": "^3.1.9"

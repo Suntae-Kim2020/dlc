@@ -17,6 +17,18 @@ const REQUEST_DELAY_MS = 5000;     // arXiv 권장 — 요청 간 5초
 
 const STATE_FILE = path.resolve(__dirname, 'harvest-state.json');
 
+// 진행상황을 PROGRESS:{json} 형태로 stdout에 한 줄씩 내보낸다.
+// 부모 프로세스(scheduler/admin route)가 이 라인을 파싱해 SSE로 클라이언트에 중계한다.
+// JOB_ID 가 있으면 PG의 oai_harvests 테이블 동일 행을 같이 갱신한다.
+const JOB_ID_ARG = process.argv.find((a) => a.startsWith('--job-id='));
+const JOB_ID = JOB_ID_ARG ? parseInt(JOB_ID_ARG.split('=')[1], 10) : null;
+const TRIGGERED_BY_ARG = process.argv.find((a) => a.startsWith('--triggered-by='));
+const TRIGGERED_BY = TRIGGERED_BY_ARG ? TRIGGERED_BY_ARG.split('=')[1] : 'cron';
+
+function progress(payload) {
+  process.stdout.write(`PROGRESS:${JSON.stringify(payload)}\n`);
+}
+
 const ES_HOST = process.env.ES_HOST || 'http://localhost:9200';
 const ES_INDEX = 'bib-records';
 
@@ -279,9 +291,6 @@ async function indexToEs(headerId, dc) {
 // 메인 — 수확 루프
 // -------------------------------------------------------
 async function main() {
-  await ensureBaseXDatabase();
-  console.log(`BaseX 데이터베이스 '${BASEX_DB}' 준비 완료`);
-
   const pg = new PgClient({
     host: process.env.DB_HOST,
     port: parseInt(process.env.DB_PORT, 10),
@@ -297,6 +306,37 @@ async function main() {
   const until = todayISODate();
   console.log(`수확 기간: ${from} ~ ${until}`);
   console.log(`수확 한도: ${HARVEST_LIMIT}건`);
+
+  // 이력 행 — JOB_ID 없으면 새로 생성, 있으면 기존 행 사용
+  let jobId = JOB_ID;
+  if (!jobId) {
+    const ins = await pg.query(
+      `INSERT INTO oai_harvests
+         (source, triggered_by, from_date, until_date, status)
+       VALUES ('arxiv', $1, $2, $3, 'running') RETURNING id`,
+      [TRIGGERED_BY, from, until],
+    );
+    jobId = ins.rows[0].id;
+  } else {
+    await pg.query(
+      `UPDATE oai_harvests
+         SET from_date = $2, until_date = $3, status = 'running'
+       WHERE id = $1`,
+      [jobId, from, until],
+    );
+  }
+
+  progress({
+    phase: 'starting',
+    jobId,
+    from,
+    until,
+    limit: HARVEST_LIMIT,
+  });
+
+  await ensureBaseXDatabase();
+  console.log(`BaseX 데이터베이스 '${BASEX_DB}' 준비 완료`);
+  progress({ phase: 'basex_ready', jobId });
 
   let harvested = 0;
   let basexOk = 0;
@@ -331,6 +371,14 @@ async function main() {
     const list = oaiResp.ListRecords || {};
     const records = asArray(list.record);
 
+    progress({
+      phase: 'page_received',
+      jobId,
+      pageSize: records.length,
+      processed: harvested,
+      limit: HARVEST_LIMIT,
+    });
+
     for (const record of records) {
       if (harvested >= HARVEST_LIMIT) break outer;
 
@@ -347,9 +395,21 @@ async function main() {
       harvested++;
       const dc = extractDC(record);
 
+      progress({
+        phase: 'record_start',
+        jobId,
+        current: harvested,
+        total: HARVEST_LIMIT,
+        identifier: headerId,
+        title: dc.title,
+      });
+
+      const targets = { basex: false, es: false, pg: false };
+
       try {
         await saveToBaseX(headerId, buildDcXml(headerId, dc));
         basexOk++;
+        targets.basex = true;
       } catch (err) {
         errors++;
         console.error(`[BaseX] ${headerId}: ${err.message}`);
@@ -358,6 +418,7 @@ async function main() {
       try {
         await indexToEs(headerId, dc);
         esOk++;
+        targets.es = true;
       } catch (err) {
         errors++;
         console.error(`[ES] ${headerId}: ${err.message}`);
@@ -366,10 +427,31 @@ async function main() {
       try {
         await upsertToPg(pg, headerId, dc);
         pgOk++;
+        targets.pg = true;
       } catch (err) {
         errors++;
         console.error(`[PG] ${headerId}: ${err.message}`);
       }
+
+      // 매 레코드마다 oai_harvests 행을 갱신 — UI에서 실시간 카운트가 반영됨
+      await pg
+        .query(
+          `UPDATE oai_harvests
+             SET harvested = $2, pg_ok = $3, es_ok = $4, basex_ok = $5, errors = $6
+           WHERE id = $1`,
+          [jobId, harvested, pgOk, esOk, basexOk, errors],
+        )
+        .catch(() => {});
+
+      progress({
+        phase: 'record_done',
+        jobId,
+        current: harvested,
+        total: HARVEST_LIMIT,
+        identifier: headerId,
+        targets,
+        counts: { pg: pgOk, es: esOk, basex: basexOk, errors },
+      });
     }
 
     // resumptionToken 추출
@@ -384,11 +466,29 @@ async function main() {
     }
   }
 
-  await pg.end();
-
   // 수확 종료 후 상태 갱신
   state.last_harvest = until;
   saveState(state);
+
+  // 결과 요약 — 전부 0건이면 'partial', 일부 오류면 'partial', 정상이면 'success'
+  const finalStatus =
+    errors > 0 ? 'partial' : harvested === 0 ? 'success' : 'success';
+
+  await pg.query(
+    `UPDATE oai_harvests
+       SET finished_at = NOW(),
+           status      = $2,
+           total       = $3,
+           harvested   = $3,
+           pg_ok       = $4,
+           es_ok       = $5,
+           basex_ok    = $6,
+           errors      = $7
+     WHERE id = $1`,
+    [jobId, finalStatus, harvested, pgOk, esOk, basexOk, errors],
+  );
+
+  await pg.end();
 
   console.log('\n=== 수확 결과 ===');
   console.log(`수확 건수    : ${harvested}`);
@@ -397,9 +497,41 @@ async function main() {
   console.log(`PG 적재      : ${pgOk}`);
   console.log(`오류         : ${errors}`);
   console.log(`다음 수확 시작: ${state.last_harvest}`);
+
+  progress({
+    phase: 'finished',
+    jobId,
+    status: finalStatus,
+    counts: { harvested, pg: pgOk, es: esOk, basex: basexOk, errors },
+    nextFrom: state.last_harvest,
+  });
 }
 
-main().catch((err) => {
+main().catch(async (err) => {
   console.error('수확 실패:', err);
+  // PG 연결이 살아 있다면 oai_harvests 에 실패 기록
+  try {
+    const pg = new PgClient({
+      host: process.env.DB_HOST,
+      port: parseInt(process.env.DB_PORT, 10),
+      database: process.env.DB_NAME,
+      user: process.env.DB_USER,
+      password: process.env.DB_PASSWORD,
+    });
+    await pg.connect();
+    const id = JOB_ID;
+    if (id) {
+      await pg.query(
+        `UPDATE oai_harvests
+           SET finished_at = NOW(), status = 'failed', error_message = $2
+         WHERE id = $1`,
+        [id, err.message],
+      );
+    }
+    await pg.end();
+  } catch {
+    /* 실패 기록 자체가 실패하면 그냥 종료 */
+  }
+  progress({ phase: 'failed', jobId: JOB_ID, error: err.message });
   process.exit(1);
 });

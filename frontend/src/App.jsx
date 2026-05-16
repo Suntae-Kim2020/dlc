@@ -13,6 +13,7 @@ import BibManagePage from './pages/admin/BibManagePage'
 import AcquireManagePage from './pages/admin/AcquireManagePage'
 import UserManagePage from './pages/admin/UserManagePage'
 import LoanManagePage from './pages/admin/LoanManagePage'
+import OaiHarvestPage from './pages/admin/OaiHarvestPage'
 
 import NotFoundPage from './pages/NotFoundPage'
 
@@ -48,6 +49,7 @@ export default function App() {
           <Route path="acquire" element={<AcquireManagePage />} />
           <Route path="users" element={<UserManagePage />} />
           <Route path="loans" element={<LoanManagePage />} />
+          <Route path="harvest" element={<OaiHarvestPage />} />
         </Route>
 
         <Route path="*" element={<NotFoundPage />} />

@@ -14,6 +14,59 @@ function validate(req, res) {
 }
 
 // -------------------------------------------------------
+// GET /api/users - 이용자 목록 (페이징 + 키워드 검색)
+//   ?page=1&limit=20&q=홍길동&user_type=student&status=active
+// -------------------------------------------------------
+router.get('/', async (req, res, next) => {
+  try {
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = Math.min(100, parseInt(req.query.limit, 10) || 20);
+    const offset = (page - 1) * limit;
+    const q = (req.query.q || '').trim();
+    const userType = req.query.user_type;
+    const status = req.query.status;
+
+    const where = [];
+    const params = [];
+    if (q) {
+      params.push(`%${q}%`);
+      where.push(
+        `(name ILIKE $${params.length} OR user_number ILIKE $${params.length} OR email ILIKE $${params.length})`,
+      );
+    }
+    if (userType) {
+      params.push(userType);
+      where.push(`user_type = $${params.length}`);
+    }
+    if (status) {
+      params.push(status);
+      where.push(`status = $${params.length}`);
+    }
+    const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
+
+    const totalRes = await pool.query(
+      `SELECT COUNT(*)::int AS n FROM users ${whereSql}`,
+      params,
+    );
+    const total = totalRes.rows[0].n;
+
+    params.push(limit, offset);
+    const rowsRes = await pool.query(
+      `SELECT id, user_number, name, email, phone, affiliation,
+              user_type, status, join_date, created_at
+         FROM users ${whereSql}
+        ORDER BY id DESC
+        LIMIT $${params.length - 1} OFFSET $${params.length}`,
+      params,
+    );
+
+    res.json({ total, page, limit, data: rowsRes.rows });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// -------------------------------------------------------
 // GET /api/users/:id - 이용자 정보 조회 (대출 현황 포함)
 // -------------------------------------------------------
 router.get(

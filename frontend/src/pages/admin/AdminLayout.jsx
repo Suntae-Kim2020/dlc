@@ -9,6 +9,7 @@ const ADMIN_LINKS = [
   { to: '/admin/acquire', label: '수서 관리', icon: '🛒' },
   { to: '/admin/users', label: '이용자 관리', icon: '👤' },
   { to: '/admin/loans', label: '대출 관리', icon: '📖' },
+  { to: '/admin/harvest', label: 'OAI 수확', icon: '🌾' },
 ]
 
 function sidebarLinkClass({ isActive }) {
