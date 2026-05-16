@@ -2,6 +2,7 @@ import { Link, NavLink, Outlet } from 'react-router-dom'
 
 import { isReadOnly } from '../../config'
 import ModeToggle from '../../components/ModeToggle'
+import QRDownloadButton from '../../components/QRDownloadButton'
 
 const ADMIN_LINKS = [
   { to: '/admin', label: '대시보드', icon: '📊', end: true },
@@ -48,6 +49,7 @@ export default function AdminLayout() {
 
           <div className="flex items-center gap-3 flex-wrap justify-end">
             <ModeToggle />
+            <QRDownloadButton />
             <Link
               to="/"
               className="text-xs sm:text-sm font-medium px-3 py-1.5 rounded-md text-neutral-700 border border-neutral-200 hover:bg-neutral-100 transition-colors whitespace-nowrap"
