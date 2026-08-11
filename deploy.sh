@@ -26,8 +26,9 @@ if [ "$BEFORE" = "$AFTER" ]; then
 fi
 
 echo "== 3/5 의존성 =="
-( cd backend  && npm ci --omit=dev --silent )
-( cd frontend && npm ci --silent )
+# --silent 금지 — lockfile 불일치 같은 npm ci 실패 사유가 가려진다.
+( cd backend  && npm ci --omit=dev --no-audit --no-fund )
+( cd frontend && npm ci --no-audit --no-fund )
 
 echo "== 4/5 프론트엔드 빌드 =="
 cp -a frontend/dist "/root/dist-backup-$(date +%Y%m%d-%H%M%S)"
