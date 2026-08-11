@@ -2,7 +2,7 @@
 -- 단일 트랜잭션 — 실패 시 전체 롤백
 BEGIN;
 
-CREATE TABLE oai_harvests (
+CREATE TABLE IF NOT EXISTS oai_harvests (
     id              SERIAL PRIMARY KEY,
     started_at      TIMESTAMP NOT NULL DEFAULT NOW(),
     finished_at     TIMESTAMP,
@@ -22,8 +22,8 @@ CREATE TABLE oai_harvests (
     error_message   TEXT
 );
 
-CREATE INDEX idx_oai_started     ON oai_harvests (started_at DESC);
-CREATE INDEX idx_oai_status      ON oai_harvests (status);
-CREATE INDEX idx_oai_triggered   ON oai_harvests (triggered_by);
+CREATE INDEX IF NOT EXISTS idx_oai_started     ON oai_harvests (started_at DESC);
+CREATE INDEX IF NOT EXISTS idx_oai_status      ON oai_harvests (status);
+CREATE INDEX IF NOT EXISTS idx_oai_triggered   ON oai_harvests (triggered_by);
 
 COMMIT;

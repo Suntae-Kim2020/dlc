@@ -184,17 +184,17 @@ DDC, LCSH, KDC 등 다양한 분류체계의 주제명을 관리한다.
 | 컬럼명 | 타입 | 제약조건 | 설명 |
 |--------|------|----------|------|
 | id | SERIAL | PK | 전자자원 ID |
-| title | TEXT | NOT NULL | 자원명 |
-| url | TEXT | NOT NULL | 접속 URL |
-| resource_type | VARCHAR(30) | NOT NULL, DEFAULT 'database' | 유형 (e_journal, e_book, database) |
-| license_type | VARCHAR(30) | | 라이선스 유형 |
-| sub_start | DATE | | 구독 시작일 |
-| sub_end | DATE | | 구독 종료일 |
-| publisher | VARCHAR(300) | | 제공 기관 |
-| description | TEXT | | 설명 |
-| status | VARCHAR(20) | NOT NULL, DEFAULT 'active' | 상태 (active, expired, trial) |
+| title | VARCHAR(500) | NOT NULL | 자원명 |
+| resource_type | VARCHAR(20) | NOT NULL, CHECK (journal, ebook, database) | 유형 |
+| provider | VARCHAR(200) | | 제공 기관 |
+| platform_url | TEXT | | 접속 URL |
+| issn | VARCHAR(20) | | ISSN (전자저널) |
+| isbn | VARCHAR(20) | | ISBN (전자책) |
+| subject | VARCHAR(200) | | 주제 분야 |
+| status | VARCHAR(20) | NOT NULL, DEFAULT 'active', CHECK (active, trial, cancelled) | 상태 |
 | created_at | TIMESTAMP | NOT NULL, DEFAULT NOW() | 생성일시 |
-| updated_at | TIMESTAMP | NOT NULL, DEFAULT NOW() | 수정일시 |
+
+라이선스 조건과 구독 기간(`start_date`/`end_date`)은 `database/lsp_schema.sql` 의 별도 `licenses` 테이블이 담당한다. 구독 기간을 e_resources 자체에 두지 않는 이유는, 한 자원이 기간이 다른 여러 계약으로 갱신되며 그 이력이 남아야 하기 때문이다.
 
 ### 12. datasets (연구데이터)
 

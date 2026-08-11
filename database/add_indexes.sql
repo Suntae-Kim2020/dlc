@@ -4,6 +4,13 @@
 -- 기존 인덱스와 중복되지 않는 항목만 포함
 -- ===========================================
 
+-- ===========================================
+-- pg_trgm 확장 활성화 (아래 trigram 인덱스에 필요)
+-- 인덱스보다 먼저 실행돼야 한다. 파일 끝에 두면 첫 실행에서 trgm
+-- 인덱스가 항상 실패하고, BEGIN 블록 전체가 롤백된다.
+-- ===========================================
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+
 BEGIN;
 
 -- ===========================================
@@ -75,10 +82,8 @@ CREATE INDEX IF NOT EXISTS idx_eres_status
 CREATE INDEX IF NOT EXISTS idx_eres_type_status
     ON e_resources (resource_type, status);
 
--- 구독 기간 조회용: 구독 만료 예정 자원 검색
-CREATE INDEX IF NOT EXISTS idx_eres_sub_end
-    ON e_resources (sub_end)
-    WHERE status = 'active';
+-- 구독 기간(sub_start/sub_end) 인덱스는 두지 않는다 — e_resources 에
+-- 해당 컬럼이 없다. 구독 만료 관리가 필요해지면 컬럼을 먼저 추가할 것.
 
 -- ===========================================
 -- 5. subjects (주제명)
@@ -94,13 +99,6 @@ CREATE INDEX IF NOT EXISTS idx_subjects_term_trgm
     ON subjects USING gin (term gin_trgm_ops);
 
 COMMIT;
-
--- ===========================================
--- pg_trgm 확장 활성화 (trigram 인덱스에 필요)
--- 위 인덱스 생성 전에 한 번 실행해야 함
--- 별도 실행: CREATE EXTENSION IF NOT EXISTS pg_trgm;
--- ===========================================
-
 
 -- ===========================================
 -- EXPLAIN ANALYZE 샘플 쿼리

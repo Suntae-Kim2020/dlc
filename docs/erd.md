@@ -35,12 +35,12 @@ erDiagram
     }
 
     EResource {
-        int resource_id PK
+        int id PK
         string title
-        string url
-        string license_type
-        date sub_start
-        date sub_end
+        string resource_type
+        string provider
+        string platform_url
+        string status
     }
 
     Dataset {

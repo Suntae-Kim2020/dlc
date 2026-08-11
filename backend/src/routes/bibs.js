@@ -17,6 +17,16 @@ function validate(req, res) {
   return true;
 }
 
+// :id 를 WHERE 절로 바꾼다.
+//   공개 식별자는 control_number(KMO202300001)이고 numeric id는 내부 구현 세부사항이다.
+//   조회만 control_number를 받고 수정·삭제는 numeric PK만 받으면 식별자 정책이 갈리므로,
+//   :id 를 쓰는 모든 핸들러가 이 헬퍼를 공유한다.
+function bibIdClause(id, placeholder = '$1') {
+  return /^\d+$/.test(id)
+    ? `id = ${placeholder}`
+    : `control_number = ${placeholder}`;
+}
+
 // ES 색인 — 실패해도 PG 트랜잭션에는 영향 없음(검색은 사이드카, PG가 source of truth)
 async function indexBibToEs(record) {
   const id = encodeURIComponent(record.control_number);
@@ -137,12 +147,9 @@ router.get(
   async (req, res, next) => {
     try {
       const { id } = req.params;
-      const isNumeric = /^\d+$/.test(id);
 
       const bibResult = await pool.query(
-        isNumeric
-          ? 'SELECT * FROM bib_records WHERE id = $1'
-          : 'SELECT * FROM bib_records WHERE control_number = $1',
+        `SELECT * FROM bib_records WHERE ${bibIdClause(id)}`,
         [id],
       );
       if (bibResult.rows.length === 0) {
@@ -229,11 +236,12 @@ router.post(
 
 // -------------------------------------------------------
 // PUT /api/bibs/:id - 레코드 수정
+//   :id는 GET과 마찬가지로 numeric PK 또는 control_number 모두 허용.
 // -------------------------------------------------------
 router.put(
   '/:id',
   [
-    param('id').isInt(),
+    param('id').trim().notEmpty(),
     body('title').optional().trim().notEmpty(),
   ],
   async (req, res, next) => {
@@ -264,7 +272,7 @@ router.put(
 
       values.push(id);
       const { rows } = await pool.query(
-        `UPDATE bib_records SET ${setClauses.join(', ')} WHERE id = $${idx} RETURNING *`,
+        `UPDATE bib_records SET ${setClauses.join(', ')} WHERE ${bibIdClause(id, `$${idx}`)} RETURNING *`,
         values,
       );
 
@@ -281,16 +289,18 @@ router.put(
 
 // -------------------------------------------------------
 // DELETE /api/bibs/:id - 레코드 삭제 (논리 삭제)
+//   :id는 GET과 마찬가지로 numeric PK 또는 control_number 모두 허용.
 // -------------------------------------------------------
 router.delete(
   '/:id',
-  [param('id').isInt()],
+  [param('id').trim().notEmpty()],
   async (req, res, next) => {
     if (!validate(req, res)) return;
     try {
+      const { id } = req.params;
       const { rows } = await pool.query(
-        `UPDATE bib_records SET record_status = 'deleted' WHERE id = $1 RETURNING id`,
-        [req.params.id],
+        `UPDATE bib_records SET record_status = 'deleted' WHERE ${bibIdClause(id)} RETURNING id`,
+        [id],
       );
 
       if (rows.length === 0) {

@@ -2,6 +2,11 @@
 -- 도서관 서비스 플랫폼(LSP) 확장 스키마
 -- 전자자원 관리 · 라이선스 · 이용통계 · 링크리졸버
 -- PostgreSQL 16+
+--
+-- 주의: 여기 정의된 4개 테이블은 schema.sql 에도 들어 있고, schema.sql 쪽이
+-- 최신이다(usage_stats 중복 방지 UNIQUE 인덱스가 그쪽에만 있다).
+-- 신규 구축은 schema.sql 하나로 끝난다. 이 파일은 LSP 확장분만 따로 보고 싶을 때
+-- 참고용이며, 이미 만들어진 DB에 다시 돌려도 통과하도록 IF NOT EXISTS 를 붙였다.
 -- ============================================================
 
 BEGIN;
@@ -11,7 +16,7 @@ BEGIN;
 -- ------------------------------------------------------------
 -- 전자저널, 전자책, 데이터베이스 등 전자자원을 관리한다.
 -- ------------------------------------------------------------
-CREATE TABLE e_resources (
+CREATE TABLE IF NOT EXISTS e_resources (
     id             BIGSERIAL    PRIMARY KEY,
     title          TEXT         NOT NULL,                          -- 전자자원명
     resource_type  VARCHAR(20)  NOT NULL                           -- 자원 유형
@@ -32,12 +37,12 @@ COMMENT ON COLUMN e_resources.provider       IS '콘텐츠 제공기관 (출판�
 COMMENT ON COLUMN e_resources.status         IS '구독 상태: active(구독중), trial(시범운영), cancelled(해지)';
 
 -- 인덱스
-CREATE INDEX idx_eres_type     ON e_resources (resource_type);
-CREATE INDEX idx_eres_provider ON e_resources (provider);
-CREATE INDEX idx_eres_issn     ON e_resources (issn) WHERE issn IS NOT NULL;
-CREATE INDEX idx_eres_isbn     ON e_resources (isbn) WHERE isbn IS NOT NULL;
-CREATE INDEX idx_eres_status   ON e_resources (status);
-CREATE INDEX idx_eres_title    ON e_resources USING gin (to_tsvector('simple', title));
+CREATE INDEX IF NOT EXISTS idx_eres_type     ON e_resources (resource_type);
+CREATE INDEX IF NOT EXISTS idx_eres_provider ON e_resources (provider);
+CREATE INDEX IF NOT EXISTS idx_eres_issn     ON e_resources (issn) WHERE issn IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_eres_isbn     ON e_resources (isbn) WHERE isbn IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_eres_status   ON e_resources (status);
+CREATE INDEX IF NOT EXISTS idx_eres_title    ON e_resources USING gin (to_tsvector('simple', title));
 
 
 -- ------------------------------------------------------------
@@ -46,7 +51,7 @@ CREATE INDEX idx_eres_title    ON e_resources USING gin (to_tsvector('simple', t
 -- 전자자원별 라이선스 조건을 관리한다.
 -- 구독형/영구구매, 동시이용자수, ILL 허용 여부 등을 포함한다.
 -- ------------------------------------------------------------
-CREATE TABLE licenses (
+CREATE TABLE IF NOT EXISTS licenses (
     id               BIGSERIAL      PRIMARY KEY,
     e_resource_id    BIGINT         NOT NULL REFERENCES e_resources(id) ON DELETE CASCADE,
     license_type     VARCHAR(20)    NOT NULL                           -- 라이선스 유형
@@ -72,9 +77,9 @@ COMMENT ON COLUMN licenses.tdm_allowed      IS '텍스트·데이터마이닝(TD
 COMMENT ON COLUMN licenses.perpetual_access IS '구독 해지 후 영구접근권 보장 여부';
 
 -- 인덱스
-CREATE INDEX idx_lic_eres       ON licenses (e_resource_id);
-CREATE INDEX idx_lic_type       ON licenses (license_type);
-CREATE INDEX idx_lic_dates      ON licenses (start_date, end_date);
+CREATE INDEX IF NOT EXISTS idx_lic_eres       ON licenses (e_resource_id);
+CREATE INDEX IF NOT EXISTS idx_lic_type       ON licenses (license_type);
+CREATE INDEX IF NOT EXISTS idx_lic_dates      ON licenses (start_date, end_date);
 
 
 -- ------------------------------------------------------------
@@ -83,7 +88,7 @@ CREATE INDEX idx_lic_dates      ON licenses (start_date, end_date);
 -- COUNTER R5 표준 기반 전자자원 이용통계를 저장한다.
 -- report_type은 COUNTER 보고서 유형(TR/DR/PR/IR)을 따른다.
 -- ------------------------------------------------------------
-CREATE TABLE usage_stats (
+CREATE TABLE IF NOT EXISTS usage_stats (
     id                    BIGSERIAL   PRIMARY KEY,
     e_resource_id         BIGINT      NOT NULL REFERENCES e_resources(id) ON DELETE CASCADE,
     report_type           VARCHAR(2)  NOT NULL                           -- COUNTER 보고서 유형
@@ -103,9 +108,9 @@ COMMENT ON COLUMN usage_stats.total_item_requests   IS '총 아이템 요청 수
 COMMENT ON COLUMN usage_stats.unique_title_requests IS '고유 타이틀 요청 수 (Unique_Title_Requests)';
 
 -- 인덱스
-CREATE INDEX idx_usage_eres     ON usage_stats (e_resource_id);
-CREATE INDEX idx_usage_period   ON usage_stats (period_year, period_month);
-CREATE INDEX idx_usage_report   ON usage_stats (report_type);
+CREATE INDEX IF NOT EXISTS idx_usage_eres     ON usage_stats (e_resource_id);
+CREATE INDEX IF NOT EXISTS idx_usage_period   ON usage_stats (period_year, period_month);
+CREATE INDEX IF NOT EXISTS idx_usage_report   ON usage_stats (report_type);
 
 
 -- ------------------------------------------------------------
@@ -114,7 +119,7 @@ CREATE INDEX idx_usage_report   ON usage_stats (report_type);
 -- OpenURL 링크리졸버가 참조하는 커버리지 정보를 관리한다.
 -- 전자자원별 수록 범위, 엠바고, OpenURL 베이스를 저장한다.
 -- ------------------------------------------------------------
-CREATE TABLE link_resolver_knowledge_base (
+CREATE TABLE IF NOT EXISTS link_resolver_knowledge_base (
     id              BIGSERIAL   PRIMARY KEY,
     e_resource_id   BIGINT      NOT NULL REFERENCES e_resources(id) ON DELETE CASCADE,
     coverage_start  DATE,                                              -- 수록 시작일
@@ -130,7 +135,7 @@ COMMENT ON COLUMN link_resolver_knowledge_base.embargo_months IS '엠바고 기�
 COMMENT ON COLUMN link_resolver_knowledge_base.open_url_base  IS 'OpenURL base URL (예: https://resolver.example.com/openurl)';
 
 -- 인덱스
-CREATE INDEX idx_lrkb_eres      ON link_resolver_knowledge_base (e_resource_id);
-CREATE INDEX idx_lrkb_coverage  ON link_resolver_knowledge_base (coverage_start, coverage_end);
+CREATE INDEX IF NOT EXISTS idx_lrkb_eres      ON link_resolver_knowledge_base (e_resource_id);
+CREATE INDEX IF NOT EXISTS idx_lrkb_coverage  ON link_resolver_knowledge_base (coverage_start, coverage_end);
 
 COMMIT;
