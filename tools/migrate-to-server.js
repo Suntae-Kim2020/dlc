@@ -8,6 +8,7 @@
 //   SERVER_USER   필수 — SSH 계정
 //   SERVER_KEY    선택 — SSH 개인키 경로 (기본 ~/.ssh/id_rsa)
 //   SERVER_PATH   선택 — 서버의 저장소 경로 (기본 /home/user/DLC/digital-library)
+//   SERVER_PORT   선택 — SSH 포트 (기본 22)
 //
 // 배포 대상 정보는 공개 저장소에 남기지 않도록 기본값을 두지 않는다.
 
@@ -30,6 +31,8 @@ const SERVER_KEY =
 // 서버를 옮길 때마다 이 파일을 고치지 않도록 밖으로 뺀다.
 const SERVER_PATH =
   process.env.SERVER_PATH || '/home/user/DLC/digital-library';
+// 서버 SSH 포트. 기본 22 가 아닌 곳이 있어 밖으로 뺀다.
+const SERVER_PORT = process.env.SERVER_PORT || '22';
 
 if (!SERVER_HOST || !SERVER_USER) {
   console.error(
@@ -61,7 +64,7 @@ const LOCAL_BASEX_AUTH =
 // 서버의 자격증명은 ssh 로 .env 를 끌어와 자동으로 사용
 function fetchServerEnv() {
   const out = execSync(
-    `ssh -i "${SERVER_KEY}" -o StrictHostKeyChecking=no -o BatchMode=yes ${SERVER_USER}@${SERVER_HOST} "cat ${SERVER_PATH}/backend/.env"`,
+    `ssh -i "${SERVER_KEY}" -p ${SERVER_PORT} -o StrictHostKeyChecking=no -o BatchMode=yes ${SERVER_USER}@${SERVER_HOST} "cat ${SERVER_PATH}/backend/.env"`,
     { encoding: 'utf8' },
   );
   const env = {};
@@ -136,6 +139,7 @@ function waitForPort(port, timeoutMs = 8000) {
 async function startTunnel() {
   const args = [
     '-i', SERVER_KEY,
+    '-p', SERVER_PORT,
     '-N', '-T',
     '-o', 'StrictHostKeyChecking=no',
     '-o', 'ExitOnForwardFailure=yes',
@@ -353,7 +357,7 @@ function copyHarvestState() {
   }
   process.stdout.write('state  복사 중... ');
   execSync(
-    `scp -i "${SERVER_KEY}" -o StrictHostKeyChecking=no -q "${stateFile}" ` +
+    `scp -i "${SERVER_KEY}" -P ${SERVER_PORT} -o StrictHostKeyChecking=no -q "${stateFile}" ` +
       `${SERVER_USER}@${SERVER_HOST}:${SERVER_PATH}/tools/harvest-state.json`,
     { stdio: 'inherit' },
   );
