@@ -83,13 +83,23 @@ fi
 
 # 보관 기간을 두는 이유는 용량 때문만이 아니다. 탈퇴한 이용자의 개인정보가
 # 백업에 영원히 남아 있으면 "삭제했다"는 말이 사실이 아니게 된다.
-ls -1t "$DEST"/daily/*.sql.gz 2>/dev/null | tail -n +$((KEEP_DAILY + 1)) | while read -r old; do
-	log "만료 삭제 $(basename "$old")"
-	rm -f "$old"
-done
-ls -1t "$DEST"/weekly/*.sql.gz 2>/dev/null | tail -n +$((KEEP_WEEKLY + 1)) | while read -r old; do
-	log "만료 삭제 weekly/$(basename "$old")"
-	rm -f "$old"
-done
+#
+# ls 로 세지 않는다. glob 이 하나도 안 맞으면 ls 가 실패하는데, set -e 와
+# pipefail 아래에서는 그 실패가 스크립트를 통째로 끝낸다. 덤프는 이미 끝난
+# 뒤라 데이터는 멀쩡한데 정리도 요약도 못 하고 유닛만 failed 로 남는다.
+# 매일 밤 그러면 진짜 실패와 구분이 안 된다.
+count_snaps() { find "$1" -maxdepth 1 -name '*.sql.gz' 2>/dev/null | wc -l; }
 
-log "백업 완료 — 일간 $(ls -1 "$DEST"/daily/*.sql.gz 2>/dev/null | wc -l) · 주간 $(ls -1 "$DEST"/weekly/*.sql.gz 2>/dev/null | wc -l)"
+prune() { # prune <디렉터리> <남길 개수>
+	local dir="$1" keep="$2" old
+	find "$dir" -maxdepth 1 -name '*.sql.gz' -printf '%T@ %p\n' 2>/dev/null |
+		sort -rn | tail -n +$((keep + 1)) | cut -d' ' -f2- |
+		while read -r old; do
+			log "만료 삭제 $(basename "$dir")/$(basename "$old")"
+			rm -f "$old"
+		done
+}
+prune "$DEST/daily" "$KEEP_DAILY"
+prune "$DEST/weekly" "$KEEP_WEEKLY"
+
+log "백업 완료 — 일간 $(count_snaps "$DEST/daily") · 주간 $(count_snaps "$DEST/weekly")"

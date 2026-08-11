@@ -26,9 +26,15 @@ if [ $# -eq 0 ]; then
 	for dir in daily weekly; do
 		[ -d "$DEST/$dir" ] || continue
 		printf '\n  [%s]\n' "$dir"
-		ls -1t "$DEST/$dir"/*.sql.gz 2>/dev/null | while read -r f; do
+		# ls 대신 find — 스냅숏이 하나도 없으면 ls 가 실패하고, set -e 아래에서
+		# 그 실패가 목록 출력을 통째로 끊는다(backup.sh 에 같은 주석이 있다).
+		found=0
+		while read -r f; do
+			[ -n "$f" ] || continue
 			printf '    %-22s %s\n' "$(basename "$f" .sql.gz)" "$(du -h "$f" | cut -f1)"
-		done
+			found=1
+		done < <(find "$DEST/$dir" -maxdepth 1 -name '*.sql.gz' -printf '%T@ %p\n' 2>/dev/null | sort -rn | cut -d' ' -f2-)
+		[ "$found" = 1 ] || printf '    (없음)\n'
 	done
 	cat <<MSG
 
