@@ -13,8 +13,15 @@ const AUTH_HEADER =
 
 const RESOURCE_BASE = 'http://ailibrary.kr/resource';
 
-// type/id 안전 패턴 — SPARQL 주입 방지
-const VALID_PARAM = /^[A-Za-z0-9._\-]+$/;
+// SPARQL 주입 방지 — DESCRIBE <...> 의 IRIREF 를 깨뜨릴 수 있는 문자를 막는다.
+// SPARQL 문법상 IRIREF 안에 올 수 없는 문자들(<>"{}|^`\ 및 공백/제어문자)이며,
+// 한글처럼 ASCII 밖의 문자는 정상적인 식별자이므로 허용한다.
+// (예: /resource/author/홍길동 — ASCII 만 허용하면 400 이 난다)
+const INVALID_IRI_CHAR = /[<>"{}|^`\\\s\u0000-\u0020]/;
+
+function isSafeParam(value) {
+  return typeof value === 'string' && value.length > 0 && !INVALID_IRI_CHAR.test(value);
+}
 
 // Accept 헤더 → Fuseki에 위임할 RDF Content-Type 결정
 function negotiateRdfFormat(acceptHeader) {
@@ -56,7 +63,7 @@ router.get('/:type/:id', async (req, res, next) => {
   try {
     const { type, id } = req.params;
 
-    if (!VALID_PARAM.test(type) || !VALID_PARAM.test(id)) {
+    if (!isSafeParam(type) || !isSafeParam(id)) {
       return res
         .status(400)
         .json({ error: '잘못된 type 또는 id 형식입니다.' });

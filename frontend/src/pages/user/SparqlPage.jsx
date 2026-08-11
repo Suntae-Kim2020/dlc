@@ -2,6 +2,22 @@ import { useState } from 'react'
 
 import { sparqlQuery } from '../../api/sparql'
 
+// RDF 안의 자원 URI 는 http://ailibrary.kr/... 로 발행되지만, 실제 서비스는
+// dl.ailibrary.kr 에서 돌아간다(apex 도메인은 DNS 미등록). URI 는 식별자이므로
+// 그대로 두고, 링크 주소만 현재 오리진으로 바꿔 실제로 열리게 한다.
+const URI_AUTHORITY = 'http://ailibrary.kr'
+const DEREFERENCEABLE_PATHS = ['/resource/'] // 백엔드가 실제로 서빙하는 경로
+
+// 클릭 가능한 주소를 돌려준다. 열 수 없는 URI 면 null (링크 대신 텍스트로 표시).
+function hrefForUri(uri) {
+  if (!uri.startsWith(URI_AUTHORITY)) return uri // 외부 URI(DBpedia 등)는 그대로
+
+  const path = uri.slice(URI_AUTHORITY.length)
+  if (!DEREFERENCEABLE_PATHS.some((p) => path.startsWith(p))) return null
+
+  return window.location.origin + path
+}
+
 const EXAMPLES = [
   {
     label: '전체 트리플 수',
@@ -110,6 +126,7 @@ function ResultsTable({ data }) {
                     </td>
                   )
                 const isUri = cell.type === 'uri'
+                const href = isUri ? hrefForUri(cell.value) : null
                 return (
                   <td
                     key={v}
@@ -118,14 +135,25 @@ function ResultsTable({ data }) {
                     }`}
                   >
                     {isUri ? (
-                      <a
-                        href={cell.value}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="hover:underline break-all"
-                      >
-                        {cell.value}
-                      </a>
+                      href ? (
+                        <a
+                          href={href}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="hover:underline break-all"
+                        >
+                          {cell.value}
+                        </a>
+                      ) : (
+                        // 역참조 불가능한 URI(예: /ontology#) — 링크로 만들면
+                        // 열리지 않는 주소로 이동하므로 식별자로만 표시한다.
+                        <span
+                          className="break-all text-neutral-500"
+                          title="이 URI 는 역참조(dereference)되지 않습니다"
+                        >
+                          {cell.value}
+                        </span>
+                      )
                     ) : (
                       <span className="break-words">{cell.value}</span>
                     )}
