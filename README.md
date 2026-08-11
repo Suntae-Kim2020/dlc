@@ -213,17 +213,15 @@ VITE_API_BASE_URL=https://dl.ailibrary.kr
 
 접속 정보(`SERVER_HOST` 등)는 공개 저장소에 두지 않고 `.env` 에만 기재합니다 — `.env.example` 참고.
 
-### 자체 서버 (이전 대상, `deploy/`)
+### 서버 구성
 
-`teed`·`kisti`·`kistep` 등이 이미 올라가 있는 자체 서버로 옮기는 중입니다. Caddy + systemd 구성이고, 필요한 것이 `deploy/` 에 모여 있습니다.
+`teed`·`kisti`·`kistep` 등이 함께 올라가 있는 자체 서버에서 돌아갑니다. Caddy + systemd 구성이고, 필요한 것이 `deploy/` 에 모여 있습니다.
 
 ```bash
-sudo ./deploy/install.sh              # 런타임·서비스·프록시 설치 (여러 번 실행해도 안전)
-./deploy/migrate-from-hetzner.sh      # 헤츠너 PostgreSQL 덤프 이전 + 파생 저장소 재생성
-# → dl.ailibrary.kr A 레코드를 자체 서버 IP 로 변경하면 전환 완료
-
-./deploy/redeploy.sh                  # 이후 재배포
-./deploy/restore.sh                   # 백업 스냅숏 목록 / 복원
+sudo ./deploy/install.sh    # 최초 구축 (여러 번 실행해도 안전)
+./deploy.sh                 # 재배포 — git pull → 빌드 → 재시작 → 헬스체크
+./deploy/backup.sh --verify # 수동 백업 (평소엔 타이머가 부른다)
+./deploy/restore.sh         # 백업 스냅숏 목록 / 복원
 ```
 
 | 구성요소 | 위치 |
@@ -234,23 +232,14 @@ sudo ./deploy/install.sh              # 런타임·서비스·프록시 설치 (
 | Elasticsearch / Fuseki / BaseX | `/opt/dl/*`, systemd `dl-elasticsearch`·`dl-fuseki`·`dl-basex` |
 | Node | `.runtime/node` (프로젝트 안에 둠 — 한 머신에 여러 프로젝트가 있어 전역 버전을 고정하지 않음) |
 | TLS | Caddy 자동 발급·갱신 |
+| 무차별 대입 차단 | fail2ban — `/api/v1/admin/unlock` 과 RAG 의 401 을 본다 |
 | 백업 | 매일 04:30, PostgreSQL 덤프만 (`deploy/backup.sh`) |
 
 **정적 파일을 `/var/www/dl` 로 복사하는 이유** — 프로젝트가 홈 디렉토리에 있어서, Caddy 가 거기서 바로 읽게 하려면 `/home/user` 까지 전부 다른 사용자가 지나갈 수 있게 열어야 합니다. 같은 머신을 여러 프로젝트가 쓰고 있어 그 대가가 큽니다.
 
-**PostgreSQL 만 백업하는 이유** — Elasticsearch·Fuseki·BaseX 는 모두 PG 에서 파생된 표현 저장소입니다. `tools/` 의 적재 스크립트로 언제든 다시 만들 수 있고, 같이 받으면 용량만 몇 배가 되면서 복원할 때 PG 와 어긋난 상태가 섞여 듭니다. 실제로 헤츠너 ES 에는 PG 에 없는 문서가 41건 남아 있습니다.
+**PostgreSQL 만 백업하는 이유** — Elasticsearch·Fuseki·BaseX 는 모두 PG 에서 파생된 표현 저장소입니다. `tools/` 의 적재 스크립트로 언제든 다시 만들 수 있고, 같이 받으면 용량만 몇 배가 되면서 복원할 때 PG 와 어긋난 상태가 섞여 듭니다.
 
-### 헤츠너 (기존, `deploy.sh`)
-
-전환이 끝날 때까지 폴백으로 남겨 둡니다. `/opt/dlc` 에서 `./deploy.sh` — nginx + pm2 + certbot 구성입니다.
-
-| 구성요소 | 위치 |
-|---|---|
-| 정적 파일 | nginx → `/opt/dlc/frontend/dist` |
-| API | pm2 `dl-backend` → `127.0.0.1:4000` (nginx 프록시) |
-| PostgreSQL / Elasticsearch | 네이티브 설치 (PG 14, ES 8.19) |
-| BaseX / Fuseki | `/opt/basex`, `/opt/fuseki` |
-| TLS | Let's Encrypt (certbot 자동 갱신) |
+> **백업 사본이 한 곳뿐입니다.** 덤프는 같은 머신에 붙은 디스크에 쌓입니다. 머신 자체 사고에는 대비가 없으므로, 외부로 한 벌 더 보내는 장치가 필요합니다.
 
 ---
 

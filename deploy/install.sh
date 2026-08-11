@@ -11,8 +11,7 @@
 #
 # 하지 않는 일 — 따로 챙겨야 한다
 #   - DNS A 레코드: dl.ailibrary.kr -> 이 머신의 공인 IP
-#     (지금은 헤츠너 204.168.215.242 를 가리키고 있다)
-#   - 데이터 이전:  ./deploy/migrate-from-hetzner.sh
+#   - 스키마 적재:  database/schema.sql 등 (아래 "데이터베이스" 절 참고)
 #   - 방화벽 개방:  TCP 443, 권장 80
 #
 # 여러 번 실행해도 안전하다. 이미 있는 것은 건너뛴다.
@@ -26,8 +25,8 @@ APP_USER="${SUDO_USER:-user}"
 RUNTIME="$ROOT/.runtime"
 OPT="/opt/dl"
 
-NODE_VER="20.20.2"     # 헤츠너와 같은 계열
-ES_VER="8.19.15"       # 헤츠너와 동일 버전
+NODE_VER="20.20.2"     # 백엔드가 검증된 계열
+ES_VER="8.19.15"       # nori 플러그인이 함께 제공되는 8.19 계열
 FUSEKI_VER="4.10.0"
 BASEX_VER="11.9"
 BASEX_ZIP="BaseX119.zip"
@@ -95,7 +94,7 @@ if [ -z "$resolved" ]; then
 	read -rp "  그래도 계속할까요? [y/N] " go
 	[ "$go" = "y" ] || exit 1
 elif [ "$resolved" != "$BIND_ADDR" ]; then
-	# 레코드가 있는지만 보고 넘어가면, 아직 헤츠너를 가리키는 채로 배포했다가
+	# 레코드가 있는지만 보고 넘어가면, 회선 IP 가 바뀐 걸 모른 채 배포했다가
 	# 인증서 발급만 반복해서 실패한다. 한도에 걸리기 전에 여기서 잡는다.
 	echo "  ⚠️  DNS 가 다른 주소를 가리킵니다."
 	echo "     $DOMAIN -> $resolved   (이 머신은 $BIND_ADDR)"
@@ -212,7 +211,7 @@ discovery.type: single-node
 # 그대로 바깥에 열린다. 백엔드만 쓰므로 루프백이면 충분하다.
 network.host: 127.0.0.1
 http.port: 9200
-# 인증을 끄는 대신 루프백에만 묶는 구성. 헤츠너와 동일하다.
+# 인증을 끄는 대신 루프백에만 묶는 구성. 백엔드 외에는 접근할 일이 없다.
 xpack.security.enabled: false
 EOF
 
@@ -261,7 +260,34 @@ sudo -u postgres psql -Atc "SELECT 1 FROM pg_database WHERE datname='$DB_NAME'" 
 	sudo -u postgres psql -q -c "CREATE DATABASE \"$DB_NAME\" OWNER \"$DB_USER\";"
 sudo -u postgres psql -d "$DB_NAME" -q -c "CREATE EXTENSION IF NOT EXISTS pg_trgm;"
 ok "$DB_NAME" "준비됨 (소유자 $DB_USER)"
-echo "     스키마·데이터 적재는 ./deploy/migrate-from-hetzner.sh 가 담당합니다."
+# 빈 DB 를 그냥 두면 백엔드는 뜨는데 모든 조회가 500 이 된다. 이미 데이터가
+# 있으면 건드리지 않는다 — 재실행이 운영 데이터를 지우면 안 된다.
+#
+# 적재는 postgres 슈퍼유저가 아니라 앱 계정으로 한다. 슈퍼유저로 만들면
+# 테이블 소유자가 postgres 가 되고, 백엔드는 dluser 로 붙으므로 모든 쓰기가
+# permission denied 로 막힌다.
+app_psql() { PGPASSWORD="$DB_PASS" psql -h 127.0.0.1 -U "$DB_USER" -d "$DB_NAME" "$@"; }
+
+# 접속부터 확인한다. 아래 판정은 "빈 문자열이면 테이블 없음"인데, 접속 자체가
+# 실패해도 결과가 빈 문자열이다. 그대로 두면 접속 불가를 빈 DB 로 착각해서
+# 적재를 시도하고, 한 파일도 못 넣은 채 "적재 완료 (0건)" 이라고 보고한다.
+if ! app_psql -Atc "SELECT 1" >/dev/null 2>&1; then
+	echo "❌ $DB_NAME 에 $DB_USER 로 접속할 수 없습니다." >&2
+	echo "   backend/.env 의 DB_* 값과 pg_hba.conf 를 확인하세요." >&2
+	exit 1
+fi
+
+if [ -z "$(app_psql -Atc "SELECT to_regclass('public.bib_records')")" ]; then
+	echo "     비어 있는 DB 입니다 — 스키마와 샘플 데이터를 넣습니다."
+	for f in schema.sql sample_data.sql lsp_schema.sql lsp_sample_data.sql \
+		migrations/001_eresources.sql migrations/002_oai_harvests.sql \
+		migrations/003_more_sample_data.sql add_indexes.sql; do
+		app_psql -q -v ON_ERROR_STOP=1 -f "$ROOT/database/$f" >/dev/null
+	done
+	ok "스키마" "적재 완료 ($(app_psql -Atc 'select count(*) from bib_records') 건)"
+else
+	ok "스키마" "이미 있음 ($(app_psql -Atc 'select count(*) from bib_records') 건) — 건너뜀"
+fi
 
 # ---------------------------------------------------------------- 애플리케이션
 say "의존성 · 프론트엔드 빌드"
@@ -371,15 +397,20 @@ done
 
 cat <<MSG
 
-설치가 끝났습니다. 아직 데이터가 없습니다.
+설치가 끝났습니다.
 
-  1) 데이터 이전:  ./deploy/migrate-from-hetzner.sh
-  2) DNS 전환:     $DOMAIN A 레코드를 $BIND_ADDR 로
-                   (지금은 ${resolved:-없음})
-  3) 확인:         curl -I https://$DOMAIN
+  1) DNS:   $DOMAIN A 레코드가 $BIND_ADDR 를 가리켜야 합니다
+            (지금은 ${resolved:-없음})
+  2) 확인:  curl -I https://$DOMAIN
+
+  검색·RDF·XML 저장소는 아직 비어 있습니다. PostgreSQL 기준으로 채웁니다:
+      node tools/create-es-index.js && node tools/pg-to-es.js
+      node tools/pg-to-fuseki.js && node tools/pg-to-bibframe.js && node tools/add-sameAs.js
+      node tools/pg-to-basex.js
 
   로그:  journalctl -u dl-backend -f
          tail -f /var/log/caddy/dl.log
   차단:  fail2ban-client status dl
+  백업:  ./deploy/backup.sh --verify   ·   ./deploy/restore.sh
   재배포: ./deploy.sh
 MSG

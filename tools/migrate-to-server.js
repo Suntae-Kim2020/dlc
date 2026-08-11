@@ -7,6 +7,7 @@
 //   SERVER_HOST   필수 — 대상 서버 주소
 //   SERVER_USER   필수 — SSH 계정
 //   SERVER_KEY    선택 — SSH 개인키 경로 (기본 ~/.ssh/id_rsa)
+//   SERVER_PATH   선택 — 서버의 저장소 경로 (기본 /home/user/DLC/digital-library)
 //
 // 배포 대상 정보는 공개 저장소에 남기지 않도록 기본값을 두지 않는다.
 
@@ -25,6 +26,10 @@ const SERVER_HOST = process.env.SERVER_HOST;
 const SERVER_USER = process.env.SERVER_USER;
 const SERVER_KEY =
   process.env.SERVER_KEY || path.join(os.homedir(), '.ssh/id_rsa');
+// 서버에 저장소가 놓인 경로. 예전 서버는 /opt/dlc 였고 지금은 홈 아래에 있다.
+// 서버를 옮길 때마다 이 파일을 고치지 않도록 밖으로 뺀다.
+const SERVER_PATH =
+  process.env.SERVER_PATH || '/home/user/DLC/digital-library';
 
 if (!SERVER_HOST || !SERVER_USER) {
   console.error(
@@ -56,7 +61,7 @@ const LOCAL_BASEX_AUTH =
 // 서버의 자격증명은 ssh 로 .env 를 끌어와 자동으로 사용
 function fetchServerEnv() {
   const out = execSync(
-    `ssh -i "${SERVER_KEY}" -o StrictHostKeyChecking=no -o BatchMode=yes ${SERVER_USER}@${SERVER_HOST} "cat /opt/dlc/backend/.env"`,
+    `ssh -i "${SERVER_KEY}" -o StrictHostKeyChecking=no -o BatchMode=yes ${SERVER_USER}@${SERVER_HOST} "cat ${SERVER_PATH}/backend/.env"`,
     { encoding: 'utf8' },
   );
   const env = {};
@@ -349,7 +354,7 @@ function copyHarvestState() {
   process.stdout.write('state  복사 중... ');
   execSync(
     `scp -i "${SERVER_KEY}" -o StrictHostKeyChecking=no -q "${stateFile}" ` +
-      `${SERVER_USER}@${SERVER_HOST}:/opt/dlc/tools/harvest-state.json`,
+      `${SERVER_USER}@${SERVER_HOST}:${SERVER_PATH}/tools/harvest-state.json`,
     { stdio: 'inherit' },
   );
   process.stdout.write('완료\n');
