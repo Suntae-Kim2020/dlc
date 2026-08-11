@@ -108,13 +108,42 @@ else
 fi
 
 # 개발용으로 띄워 둔 인스턴스가 포트를 잡고 있으면 서비스가 못 뜬다.
+#
+# 경고만 하고 넘어가면 안 된다. 실제로 그렇게 해 봤더니, 설치는 "성공"으로
+# 끝나고 서비스 넷은 조용히 재시작만 반복하는데 Caddy 는 그 포트를 물고 있는
+# 개발용 프로세스로 요청을 넘겨서, 공개 주소가 임시 디렉터리의 프로세스로
+# 서비스되는 상태가 됐다. 겉으로는 200 이 떠서 알아채기까지 시간이 걸린다.
+# 그리고 apt 가 PostgreSQL 을 올릴 때 5432 가 잡혀 있으면 클러스터가 5433 에
+# 생기는데, .env 는 5432 를 보므로 백엔드만 연결에 실패한다.
+BUSY=""
 for p in 4000 9200 3030 8984 5432; do
-	if ss -tln 2>/dev/null | grep -qE "[:.]$p\s"; then
-		holder="$(ss -tlnp 2>/dev/null | grep -E "[:.]$p\s" | grep -oE 'users:\(\("[^"]+"' | head -1 | sed 's/.*"//')"
-		echo "  ⚠️  포트 $p 를 이미 누가 쓰고 있습니다 (${holder:-?})."
-		echo "     개발용으로 띄워 둔 것이면 먼저 정리하세요."
+	ss -tln 2>/dev/null | grep -qE "[:.]$p\s" || continue
+
+	# 5432 는 정상 설치된 서버에서 시스템 PostgreSQL 이 늘 잡고 있다. 그것까지
+	# 막으면 멀쩡한 서버에서 재설치를 못 한다. 우리 클러스터가 아닐 때만 따진다.
+	if [ "$p" = 5432 ] && pg_lsclusters -h 2>/dev/null | awk '$3==5432 && $4=="online"' | grep -q .; then
+		ok "포트 5432" "시스템 PostgreSQL (정상)"
+		continue
 	fi
+
+	holder="$(ss -tlnp 2>/dev/null | grep -E "[:.]$p\s" | grep -oE 'users:\(\("[^"]+"' | head -1 | sed 's/.*"//')"
+	echo "  ❌ 포트 $p 사용 중 (${holder:-?})"
+	BUSY="$BUSY $p"
 done
+if [ -n "$BUSY" ]; then
+	cat >&2 <<EOF
+
+포트가 비어 있어야 설치할 수 있습니다:$BUSY
+
+  이미 dl-* 서비스가 돌고 있는 상태에서 다시 설치하는 것이라면:
+      sudo systemctl stop dl-backend dl-elasticsearch dl-fuseki dl-basex
+      sudo $0
+
+  개발용으로 띄워 둔 것이라면 무엇이 잡고 있는지 확인하세요:
+      ss -tlnp | grep -E "$(echo "$BUSY" | tr ' ' '|' | sed 's/^|//')"
+EOF
+	exit 1
+fi
 
 # ---------------------------------------------------------------- 런타임
 say "런타임 설치"
@@ -138,7 +167,17 @@ if ! command -v psql >/dev/null; then
 	apt-get install -y postgresql postgresql-contrib
 fi
 systemctl enable --now postgresql
-ok "postgresql" "$(sudo -u postgres psql -Atc 'show server_version' 2>/dev/null || echo '?')"
+
+# 설치 시점에 5432 가 잡혀 있었다면 클러스터가 5433 에 만들어진다. backend/.env
+# 는 5432 를 보므로 그대로 두면 백엔드만 ECONNREFUSED 로 죽는다. 위 포트 검사가
+# 그 상황을 막지만, 예전에 그렇게 만들어진 클러스터가 남아 있을 수 있다.
+PG_PORT="$(pg_conftool "$(pg_lsclusters -h | awk 'NR==1{print $1}')" main show port 2>/dev/null | awk '{print $3}')"
+if [ -n "$PG_PORT" ] && [ "$PG_PORT" != "5432" ]; then
+	echo "  클러스터가 $PG_PORT 에 있습니다 — 5432 로 옮깁니다."
+	pg_conftool "$(pg_lsclusters -h | awk 'NR==1{print $1}')" main set port 5432
+	systemctl restart postgresql
+fi
+ok "postgresql" "$(sudo -u postgres psql -Atc 'show server_version' 2>/dev/null || echo '?') (포트 $(pg_conftool "$(pg_lsclusters -h | awk 'NR==1{print $1}')" main show port | awk '{print $3}'))"
 
 command -v caddy >/dev/null || {
 	apt-get install -y debian-keyring debian-archive-keyring apt-transport-https curl gnupg
@@ -187,11 +226,27 @@ JETTY="$OPT/basex/webapp/WEB-INF/jetty.xml"
 if [ -f "$JETTY" ] && ! grep -q '"host"' "$JETTY"; then
 	sed -i 's|<Set name="port">|<Set name="host">127.0.0.1</Set>\n      <Set name="port">|' "$JETTY"
 fi
-# 백엔드 .env 가 admin/admin 을 기대한다. BaseX 는 최초 기동 때 계정을 만든다.
-sudo -u "$APP_USER" "$OPT/basex/bin/basex" -c "ALTER PASSWORD admin admin" >/dev/null 2>&1 || true
 
+# 소유권을 먼저 넘긴다. 아래 ALTER PASSWORD 가 users.xml 을 쓰는데, root 소유인
+# 채로 두면 그 쓰기가 실패한다. 처음엔 그 실패를 || true 로 삼키게 해 뒀다가,
+# 설치는 멀쩡히 끝나고 pg-to-basex.js 만 401 로 죽는 상황을 만들었다.
 chown -R "$APP_USER:$APP_USER" "$OPT"
-ok "저장소" "$OPT 준비 완료"
+
+# 백엔드 .env 가 admin/admin 을 기대한다. BaseX 는 users.xml 이 없으면 접속을
+# 전부 401 로 막는다. 반드시 서버가 떠 있지 않을 때 실행해야 한다 — 떠 있으면
+# 종료할 때 자기 메모리 상태로 users.xml 을 덮어써서 이 설정이 사라진다.
+systemctl stop dl-basex 2>/dev/null || true
+if ! sudo -u "$APP_USER" "$OPT/basex/bin/basex" -c "ALTER PASSWORD admin admin" >/dev/null 2>&1; then
+	echo "❌ BaseX 관리자 비밀번호 설정에 실패했습니다." >&2
+	echo "   $OPT/basex 쓰기 권한을 확인하세요." >&2
+	exit 1
+fi
+[ -f "$OPT/basex/data/users.xml" ] || {
+	echo "❌ BaseX users.xml 이 만들어지지 않았습니다." >&2
+	exit 1
+}
+chown "$APP_USER:$APP_USER" "$OPT/basex/data/users.xml"
+ok "저장소" "$OPT 준비 완료 (BaseX 계정 설정됨)"
 
 # ---------------------------------------------------------------- 데이터베이스
 say "데이터베이스"
