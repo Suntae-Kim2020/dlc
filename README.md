@@ -201,6 +201,32 @@ VITE_API_BASE_URL=https://dl.ailibrary.kr
 
 ---
 
+## 배포
+
+운영 서버(`dl.ailibrary.kr`)의 `/opt/dlc` 는 **배포 전용 저장소**입니다. 서버에서 소스를 직접 수정하지 않습니다.
+
+```
+로컬 수정 → git push origin main → 서버에서 ./deploy.sh
+```
+
+`deploy.sh` 가 하는 일: 작업트리 청결 확인 → `git merge --ff-only origin/main` → `npm ci` → 프론트 빌드(기존 dist 백업) → `pm2 restart dl-backend` → 헬스체크.
+
+**서버에서 직접 커밋하지 않는 이유** — 2026-05-16 에 서버에서 4개 커밋이 직접 만들어져 로컬·GitHub 와 이력이 갈라진 적이 있습니다. 서버만 최신인 코드가 백업 없이 존재하게 되므로, `.git/hooks/pre-commit` 이 서버 커밋을 차단합니다. `deploy.sh` 의 `--ff-only` 도 같은 목적입니다 — 분기가 생기면 조용히 병합하지 않고 즉시 실패합니다.
+
+서버 구성 (Hetzner, Ubuntu 22.04):
+
+| 구성요소 | 위치 |
+|---|---|
+| 정적 파일 | nginx → `/opt/dlc/frontend/dist` |
+| API | pm2 `dl-backend` → `127.0.0.1:4000` (nginx 프록시) |
+| PostgreSQL / Elasticsearch | 네이티브 설치 (로컬 개발은 docker-compose) |
+| BaseX / Fuseki | `/opt/basex`, `/opt/fuseki` |
+| TLS | Let's Encrypt (certbot 자동 갱신) |
+
+접속 정보(`SERVER_HOST` 등)는 공개 저장소에 두지 않고 `.env` 에만 기재합니다 — `.env.example` 참고.
+
+---
+
 ## 학습 핵심 포인트
 
 이 프로젝트는 단순한 CRUD 학습이 아니라 **도서관 정보학의 핵심 표준**을 구현체로 만드는 것이 목표입니다.

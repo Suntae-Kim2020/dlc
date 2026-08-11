@@ -3,10 +3,12 @@
 // 동작 방식: SSH 다중 -L 포트포워딩 터널을 띄워 서버의 PG/ES/BaseX 를
 // 로컬 포트로 노출. 그 동안 PG/ES/BaseX 클라이언트로 동기화 진행.
 //
-// 환경변수 (선택):
-//   SERVER_HOST   기본 204.168.215.242
-//   SERVER_USER   기본 root
-//   SERVER_KEY    기본 ~/.ssh/id_rsa
+// 환경변수 (backend/.env 또는 셸에서 지정):
+//   SERVER_HOST   필수 — 대상 서버 주소
+//   SERVER_USER   필수 — SSH 계정
+//   SERVER_KEY    선택 — SSH 개인키 경로 (기본 ~/.ssh/id_rsa)
+//
+// 배포 대상 정보는 공개 저장소에 남기지 않도록 기본값을 두지 않는다.
 
 const path = require('path');
 const fs = require('fs');
@@ -19,10 +21,19 @@ require('dotenv').config({ path: path.resolve(__dirname, '../backend/.env') });
 const { Client: PgClient } = require('pg');
 
 // ----- 설정 -----
-const SERVER_HOST = process.env.SERVER_HOST || '204.168.215.242';
-const SERVER_USER = process.env.SERVER_USER || 'root';
+const SERVER_HOST = process.env.SERVER_HOST;
+const SERVER_USER = process.env.SERVER_USER;
 const SERVER_KEY =
   process.env.SERVER_KEY || path.join(os.homedir(), '.ssh/id_rsa');
+
+if (!SERVER_HOST || !SERVER_USER) {
+  console.error(
+    '[설정 누락] SERVER_HOST 와 SERVER_USER 가 필요합니다.\n' +
+      '  backend/.env 에 추가하거나 실행 시 지정하세요:\n' +
+      '    SERVER_HOST=example.com SERVER_USER=deploy node tools/migrate-to-server.js',
+  );
+  process.exit(1);
+}
 
 const LOCAL_PG_PORT = parseInt(process.env.DB_PORT, 10) || 5432;
 const LOCAL_ES_HOST = process.env.ES_HOST || 'http://localhost:9200';
