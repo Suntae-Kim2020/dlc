@@ -2,6 +2,7 @@ import { NavLink } from 'react-router-dom'
 
 import { isDemoBuild } from '../config'
 import ModeToggle from './ModeToggle'
+import QRDownloadButton from './QRDownloadButton'
 
 const userLinks = [
   { to: '/', label: '검색', end: true },
@@ -43,6 +44,7 @@ export default function NavBar() {
 
           <div className="flex items-center gap-3 flex-wrap justify-end">
             <ModeToggle />
+            <QRDownloadButton />
             <NavLink
               to="/admin"
               className={({ isActive }) =>

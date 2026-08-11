@@ -48,18 +48,18 @@ SELECT ?subject ?external WHERE {
 }`,
   },
   {
-    label: 'Wikidata 페더레이션 — Tim Berners-Lee 출생지',
+    label: 'DBpedia 페더레이션 — Tim Berners-Lee 출생지',
     query: `PREFIX foaf: <http://xmlns.com/foaf/0.1/>
 PREFIX owl:  <http://www.w3.org/2002/07/owl#>
-PREFIX wdt:  <http://www.wikidata.org/prop/direct/>
+PREFIX dbo:  <http://dbpedia.org/ontology/>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 
 SELECT ?name ?birthPlace WHERE {
   ?author foaf:name "Tim Berners-Lee" ;
-          owl:sameAs ?wikidataId .
-  SERVICE <https://query.wikidata.org/sparql> {
-    ?wikidataId wdt:P19 ?bp .
-    ?bp rdfs:label ?birthPlace .
+          owl:sameAs ?dbpediaId .
+  FILTER(STRSTARTS(STR(?dbpediaId), "http://dbpedia.org/"))
+  SERVICE <https://dbpedia.org/sparql> {
+    ?dbpediaId dbo:birthPlace/rdfs:label ?birthPlace .
     FILTER(LANG(?birthPlace) = "en")
   }
   BIND("Tim Berners-Lee" AS ?name)

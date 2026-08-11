@@ -2,6 +2,7 @@ import { Link, NavLink, Outlet } from 'react-router-dom'
 
 import { isReadOnly } from '../../config'
 import ModeToggle from '../../components/ModeToggle'
+import QRDownloadButton from '../../components/QRDownloadButton'
 
 const ADMIN_LINKS = [
   { to: '/admin', label: '대시보드', icon: '📊', end: true },
@@ -9,6 +10,7 @@ const ADMIN_LINKS = [
   { to: '/admin/acquire', label: '수서 관리', icon: '🛒' },
   { to: '/admin/users', label: '이용자 관리', icon: '👤' },
   { to: '/admin/loans', label: '대출 관리', icon: '📖' },
+  { to: '/admin/harvest', label: 'OAI 수확', icon: '🌾' },
 ]
 
 function sidebarLinkClass({ isActive }) {
@@ -47,6 +49,7 @@ export default function AdminLayout() {
 
           <div className="flex items-center gap-3 flex-wrap justify-end">
             <ModeToggle />
+            <QRDownloadButton />
             <Link
               to="/"
               className="text-xs sm:text-sm font-medium px-3 py-1.5 rounded-md text-neutral-700 border border-neutral-200 hover:bg-neutral-100 transition-colors whitespace-nowrap"

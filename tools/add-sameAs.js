@@ -28,14 +28,17 @@ INSERT DATA {
       foaf:page  <https://ko.wikipedia.org/wiki/%ED%99%8D%EA%B8%B8%EB%8F%99> .
 
   # ---------------------------------------------------------
-  # 2. Tim Berners-Lee — 실제 Wikidata URI
+  # 2. Tim Berners-Lee — 실제 Wikidata + DBpedia URI
   #    링크드 데이터 4원칙 ② "HTTP URI를 사용하라"의 살아 있는 사례.
-  #    Q80 = Wikidata의 Tim Berners-Lee 항목.
+  #    Q80     = Wikidata의 Tim Berners-Lee 항목.
+  #    DBpedia = 페더레이션 SPARQL 데모용 (Wikidata는 Java 클라이언트
+  #              기본 User-Agent를 거부하므로 페더레이션 시연은 DBpedia 사용).
   # ---------------------------------------------------------
   <http://ailibrary.kr/resource/agent/tim-berners-lee>
       a foaf:Person ;
       foaf:name "Tim Berners-Lee" ;
-      owl:sameAs <https://www.wikidata.org/entity/Q80> .
+      owl:sameAs <https://www.wikidata.org/entity/Q80> ,
+                 <http://dbpedia.org/resource/Tim_Berners-Lee> .
 
   # ---------------------------------------------------------
   # 3. 서지 레코드 KMO202300001 — WorldCat OCLC 가상 연결

@@ -9,3 +9,10 @@ export function getUser(id) {
 export function createUser(data) {
   return apiClient.post('/api/users', data).then((res) => res.data)
 }
+
+// 이용자 목록 (페이징 + 키워드 검색)
+export function getUsers({ page = 1, limit = 20, q = '' } = {}) {
+  return apiClient
+    .get('/api/v1/users', { params: { page, limit, q } })
+    .then((res) => res.data)
+}

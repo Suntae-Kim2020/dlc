@@ -83,8 +83,13 @@ app.use('/oai', oaiRouter);
 // (URI 베이스가 http://ailibrary.kr/resource 이므로 같은 경로로 마운트)
 app.use('/resource', lodRouter);
 
-// 스케줄러 시작 — 매일 새벽 3시(KST) OAI 수확 자동 실행
-startScheduler();
+// OAI 자동 수확 — OAI_SCHEDULER_ENABLED=true 일 때만 매일 새벽 3시(KST) 실행.
+// 기본은 꺼짐 — 관리자 화면에서 수동 실행으로 충분, 자동은 노이즈만 만든다.
+if (process.env.OAI_SCHEDULER_ENABLED === 'true') {
+  startScheduler();
+} else {
+  console.log('[scheduler] OAI 자동 수확 비활성 (수동 실행만 허용)');
+}
 
 // 하위 호환성 — /api/* (deprecated, v1로 마이그레이션 권장)
 app.use('/api/bibs', bibsRouter);

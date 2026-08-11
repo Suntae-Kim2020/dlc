@@ -131,7 +131,7 @@ export default function ModeToggle() {
           <span
             className={[
               'inline-block w-1.5 h-1.5 rounded-full',
-              admin ? 'bg-indigo-500 animate-pulse' : 'bg-neutral-300',
+              admin ? 'bg-emerald-500 animate-pulse' : 'bg-neutral-300',
             ].join(' ')}
           />
           {admin ? '활성 모드' : '데모 모드'}
@@ -144,7 +144,7 @@ export default function ModeToggle() {
           className={[
             'relative inline-flex h-5 w-9 flex-shrink-0 items-center rounded-full transition-colors',
             admin
-              ? 'bg-neutral-900 group-hover:bg-neutral-800'
+              ? 'bg-emerald-500 group-hover:bg-emerald-600'
               : 'bg-neutral-200 group-hover:bg-neutral-300',
           ].join(' ')}
         >
