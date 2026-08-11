@@ -11,6 +11,9 @@ node_modules/
 dist/
 build/
 
+# 배포 서버가 프로젝트 안에 두는 런타임 (Node 등)과 이전 빌드 백업
+.runtime/
+
 # 로그
 *.log
 

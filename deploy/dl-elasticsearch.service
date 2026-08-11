@@ -1,0 +1,41 @@
+[Unit]
+Description=DLC Elasticsearch (검색 인덱스, nori 한국어 형태소)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=exec
+User=user
+Group=user
+WorkingDirectory=/opt/dl/elasticsearch
+# 이 머신은 다른 프로젝트와 함께 쓰므로 힙을 넉넉히 잡지 않는다. 서지 수만 건
+# 규모에서 1g 면 충분하고, 남는 메모리는 OS 페이지 캐시가 더 잘 쓴다.
+# 따옴표가 없으면 systemd 가 공백에서 잘라 -Xmx1g 를 두 번째 대입으로 보고
+# 버린다. 그러면 힙 상한이 기본값(머신 메모리의 절반)으로 뜬다.
+Environment="ES_JAVA_OPTS=-Xms1g -Xmx1g"
+# 타르볼에 동봉된 JDK 를 쓴다. 시스템 자바 버전이 바뀌어도 영향받지 않는다.
+Environment=ES_JAVA_HOME=/opt/dl/elasticsearch/jdk
+ExecStart=/opt/dl/elasticsearch/bin/elasticsearch
+
+# 인덱스 복구까지 시간이 걸린다. 그 전에 죽었다고 판단하지 않게 넉넉히 준다.
+TimeoutStartSec=300
+Restart=always
+RestartSec=10
+
+# ES 는 자기 힙을 메모리에 고정하려 한다. 못 하면 경고만 내고 뜨지만,
+# 스와핑이 시작되면 검색 지연이 튄다.
+LimitMEMLOCK=infinity
+LimitNOFILE=65535
+LimitNPROC=4096
+
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/opt/dl/elasticsearch
+ProtectKernelTunables=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+
+[Install]
+WantedBy=multi-user.target

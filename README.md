@@ -203,27 +203,54 @@ VITE_API_BASE_URL=https://dl.ailibrary.kr
 
 ## 배포
 
-운영 서버(`dl.ailibrary.kr`)의 `/opt/dlc` 는 **배포 전용 저장소**입니다. 서버에서 소스를 직접 수정하지 않습니다.
+운영 저장소는 **배포 전용**입니다. 서버에서 소스를 직접 수정하지 않습니다.
 
 ```
-로컬 수정 → git push origin main → 서버에서 ./deploy.sh
+로컬 수정 → git push origin main → 서버에서 재배포 스크립트
 ```
 
-`deploy.sh` 가 하는 일: 작업트리 청결 확인 → `git merge --ff-only origin/main` → `npm ci` → 프론트 빌드(기존 dist 백업) → `pm2 restart dl-backend` → 헬스체크.
+**서버에서 직접 커밋하지 않는 이유** — 2026-05-16 에 서버에서 4개 커밋이 직접 만들어져 로컬·GitHub 와 이력이 갈라진 적이 있습니다. 서버만 최신인 코드가 백업 없이 존재하게 되므로, `.git/hooks/pre-commit` 이 서버 커밋을 차단합니다. 재배포 스크립트의 `--ff-only` 도 같은 목적입니다 — 분기가 생기면 조용히 병합하지 않고 즉시 실패합니다.
 
-**서버에서 직접 커밋하지 않는 이유** — 2026-05-16 에 서버에서 4개 커밋이 직접 만들어져 로컬·GitHub 와 이력이 갈라진 적이 있습니다. 서버만 최신인 코드가 백업 없이 존재하게 되므로, `.git/hooks/pre-commit` 이 서버 커밋을 차단합니다. `deploy.sh` 의 `--ff-only` 도 같은 목적입니다 — 분기가 생기면 조용히 병합하지 않고 즉시 실패합니다.
+접속 정보(`SERVER_HOST` 등)는 공개 저장소에 두지 않고 `.env` 에만 기재합니다 — `.env.example` 참고.
 
-서버 구성 (Hetzner, Ubuntu 22.04):
+### 자체 서버 (이전 대상, `deploy/`)
+
+`teed`·`kisti`·`kistep` 등이 이미 올라가 있는 자체 서버로 옮기는 중입니다. Caddy + systemd 구성이고, 필요한 것이 `deploy/` 에 모여 있습니다.
+
+```bash
+sudo ./deploy/install.sh              # 런타임·서비스·프록시 설치 (여러 번 실행해도 안전)
+./deploy/migrate-from-hetzner.sh      # 헤츠너 PostgreSQL 덤프 이전 + 파생 저장소 재생성
+# → dl.ailibrary.kr A 레코드를 자체 서버 IP 로 변경하면 전환 완료
+
+./deploy/redeploy.sh                  # 이후 재배포
+./deploy/restore.sh                   # 백업 스냅숏 목록 / 복원
+```
+
+| 구성요소 | 위치 |
+|---|---|
+| 정적 파일 | Caddy → `/var/www/dl` (빌드 후 복사) |
+| API | systemd `dl-backend` → `127.0.0.1:4000` |
+| PostgreSQL | 시스템 패키지 (16) |
+| Elasticsearch / Fuseki / BaseX | `/opt/dl/*`, systemd `dl-elasticsearch`·`dl-fuseki`·`dl-basex` |
+| Node | `.runtime/node` (프로젝트 안에 둠 — 한 머신에 여러 프로젝트가 있어 전역 버전을 고정하지 않음) |
+| TLS | Caddy 자동 발급·갱신 |
+| 백업 | 매일 04:30, PostgreSQL 덤프만 (`deploy/backup.sh`) |
+
+**정적 파일을 `/var/www/dl` 로 복사하는 이유** — 프로젝트가 홈 디렉토리에 있어서, Caddy 가 거기서 바로 읽게 하려면 `/home/user` 까지 전부 다른 사용자가 지나갈 수 있게 열어야 합니다. 같은 머신을 여러 프로젝트가 쓰고 있어 그 대가가 큽니다.
+
+**PostgreSQL 만 백업하는 이유** — Elasticsearch·Fuseki·BaseX 는 모두 PG 에서 파생된 표현 저장소입니다. `tools/` 의 적재 스크립트로 언제든 다시 만들 수 있고, 같이 받으면 용량만 몇 배가 되면서 복원할 때 PG 와 어긋난 상태가 섞여 듭니다. 실제로 헤츠너 ES 에는 PG 에 없는 문서가 41건 남아 있습니다.
+
+### 헤츠너 (기존, `deploy.sh`)
+
+전환이 끝날 때까지 폴백으로 남겨 둡니다. `/opt/dlc` 에서 `./deploy.sh` — nginx + pm2 + certbot 구성입니다.
 
 | 구성요소 | 위치 |
 |---|---|
 | 정적 파일 | nginx → `/opt/dlc/frontend/dist` |
 | API | pm2 `dl-backend` → `127.0.0.1:4000` (nginx 프록시) |
-| PostgreSQL / Elasticsearch | 네이티브 설치 (로컬 개발은 docker-compose) |
+| PostgreSQL / Elasticsearch | 네이티브 설치 (PG 14, ES 8.19) |
 | BaseX / Fuseki | `/opt/basex`, `/opt/fuseki` |
 | TLS | Let's Encrypt (certbot 자동 갱신) |
-
-접속 정보(`SERVER_HOST` 등)는 공개 저장소에 두지 않고 `.env` 에만 기재합니다 — `.env.example` 참고.
 
 ---
 

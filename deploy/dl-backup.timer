@@ -1,0 +1,12 @@
+[Unit]
+Description=DLC 데이터베이스 백업 (매일 새벽)
+
+[Timer]
+# TEED 백업이 04:00 에 같은 디스크를 쓴다. 30분 비켜 둔다.
+OnCalendar=*-*-* 04:30:00
+# 서버가 꺼져 있어 지나간 실행은 켜진 뒤에 한 번 돌린다.
+Persistent=true
+RandomizedDelaySec=10m
+
+[Install]
+WantedBy=timers.target

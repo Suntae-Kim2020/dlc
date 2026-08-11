@@ -1,0 +1,93 @@
+# >>> DLC BEGIN — install.sh 가 관리합니다. 여기부터 END 까지 직접 고치지 마세요. >>>
+# DLC(디지털도서관) 리버스 프록시.
+#
+# Caddy 를 쓰는 이유는 인증서를 알아서 발급하고 갱신하기 때문이다. 헤츠너에서
+# 쓰던 nginx + certbot 조합은 갱신 크론을 따로 챙겨야 했지만 여기서는 그럴
+# 일이 없다.
+#
+#   설치 위치: /etc/caddy/Caddyfile  (install.sh 가 기존 파일 뒤에 이어 붙인다)
+#   적용:      sudo systemctl reload caddy
+#
+# 헤츠너 nginx 설정과 동일한 라우팅을 재현한다.
+#   /                     → frontend/dist 정적 파일 (SPA fallback)
+#   /api /oai /resource   → 127.0.0.1:4000
+#   /api-docs             → 127.0.0.1:4000 (Swagger)
+#   .../harvest/stream    → 127.0.0.1:4000, 버퍼링 없이 (SSE)
+
+dl.ailibrary.kr {
+	# 공인 IP 에만 묶는다. 그냥 두면 Caddy 가 :443 을 와일드카드로 잡으려 하는데,
+	# 태일넷 주소(100.x)의 443 은 다른 프로젝트의 tailscale serve 가 이미 쓰고
+	# 있어서 "bind: address already in use" 로 죽는다.
+	# 주소는 install.sh 가 기본 경로 인터페이스에서 찾아 채워 넣는다.
+	bind __BIND_ADDR__
+
+	# OAI 수확 진행 상황은 Server-Sent Events 로 흘려보낸다. 압축을 걸면
+	# 이벤트가 버퍼에 고여 진행률이 실시간으로 안 보인다. 이 경로만 뺀다.
+	@nostream not path /api/v1/admin/harvest/stream*
+	encode @nostream zstd gzip
+
+	# SSE — 수확이 한 시간 넘게 도는 경우가 있어 타임아웃을 길게 잡고,
+	# flush_interval -1 로 응답을 받는 즉시 흘려보낸다.
+	handle /api/v1/admin/harvest/stream* {
+		reverse_proxy 127.0.0.1:4000 {
+			header_up X-Real-IP {remote_host}
+			flush_interval -1
+			transport http {
+				read_timeout 1h
+				write_timeout 1h
+			}
+		}
+	}
+
+	# REST API · OAI-PMH · 링크드 데이터 · Swagger
+	handle /api/* {
+		reverse_proxy 127.0.0.1:4000 {
+			header_up X-Real-IP {remote_host}
+		}
+	}
+	handle /oai* {
+		reverse_proxy 127.0.0.1:4000 {
+			header_up X-Real-IP {remote_host}
+		}
+	}
+	handle /resource/* {
+		reverse_proxy 127.0.0.1:4000 {
+			header_up X-Real-IP {remote_host}
+		}
+	}
+	handle /api-docs* {
+		reverse_proxy 127.0.0.1:4000 {
+			header_up X-Real-IP {remote_host}
+		}
+	}
+
+	# React 라우터를 쓰므로 /bib/KMO... 같은 주소도 index.html 로 넘겨야 한다.
+	# (헤츠너 nginx 의 try_files $uri /index.html 과 같은 역할)
+	#
+	# 빌드 결과물은 프로젝트 폴더가 아니라 /var/www/dl 에 복사해서 서비스한다.
+	# 프로젝트가 홈 디렉토리에 있어서, 거기서 바로 읽게 하려면 /home/user 까지
+	# 전부 다른 사용자가 지나갈 수 있게 열어야 한다. 이 머신은 여러 프로젝트가
+	# 함께 쓰는 곳이라 그 대가가 크다. humanoidrobot·kistep 도 같은 이유로
+	# /var/www 를 쓴다. 복사는 install.sh 와 redeploy.sh 가 한다.
+	handle {
+		root * /var/www/dl
+		try_files {path} /index.html
+		file_server
+	}
+
+	header {
+		# HTTPS 로만 접속하게 브라우저에 기억시킨다.
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+
+	log {
+		output file /var/log/caddy/dl.log {
+			roll_size 50MB
+			roll_keep 10
+		}
+	}
+}
+# <<< DLC END <<<
