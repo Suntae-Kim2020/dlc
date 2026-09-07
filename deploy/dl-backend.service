@@ -8,8 +8,8 @@ Requires=postgresql.service
 
 [Service]
 Type=exec
-User=user
-Group=user
+User=__APP_USER__
+Group=__APP_USER__
 WorkingDirectory=__ROOT__/backend
 EnvironmentFile=__ROOT__/backend/.env
 Environment=NODE_ENV=production

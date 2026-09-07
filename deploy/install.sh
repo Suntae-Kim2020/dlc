@@ -20,7 +20,15 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DEPLOY="$ROOT/deploy"
 DOMAIN="dl.ailibrary.kr"
-APP_USER="${SUDO_USER:-user}"
+# 서비스를 돌릴 계정. sudo 로 부르면 부른 사람이 되고, root 로 직접 부르는
+# 서버(헤츠너처럼 일반 계정이 없는 곳)에서는 DL_APP_USER 로 지정해야 한다.
+# 기본값을 두지 않는 이유 — 없는 계정 이름이 기본으로 박히면 chown 부터
+# 실패하는데, 그때는 이미 패키지 설치가 절반쯤 끝나 있다.
+APP_USER="${DL_APP_USER:-${SUDO_USER:-}}"
+
+# 백업 목적지. 마운트된 별도 디스크를 전제한다(backup.sh 주석 참고).
+BACKUP_DEST="${DL_BACKUP_DEST:-/media/user/df9db4f3-386b-4bd4-b1bf-fcebb530b180/dl-backup}"
+BACKUP_MOUNT="$(dirname "$BACKUP_DEST")"
 
 RUNTIME="$ROOT/.runtime"
 OPT="/opt/dl"
@@ -36,13 +44,36 @@ if [ "$EUID" -ne 0 ]; then
 	exit 1
 fi
 
+# 계정이 실제로 있는지 여기서 막는다. Elasticsearch 는 root 로는 아예 뜨지
+# 않으므로 root 도 거른다 — 나중에 알면 원인 찾기가 훨씬 어렵다.
+if [ -z "$APP_USER" ] || [ "$APP_USER" = "root" ] || ! id "$APP_USER" >/dev/null 2>&1; then
+	cat >&2 <<EOF
+
+[중단] 서비스를 돌릴 일반 계정을 정하지 못했습니다. (지금 값: "${APP_USER:-없음}")
+
+  sudo 로 부르셨다면 부른 계정이 자동으로 쓰입니다.
+  root 로 로그인하는 서버라면 계정을 만들고 지정하세요:
+
+    adduser --disabled-password --gecos "" dl
+    DL_APP_USER=dl $0
+
+  root 로는 돌리지 않습니다. Elasticsearch 가 root 실행을 거부합니다.
+
+EOF
+	exit 1
+fi
+
 say() { printf '\n\033[1m== %s\033[0m\n' "$*"; }
 ok() { printf '  %-14s %s\n' "$1" "$2"; }
 
 # 유닛 파일은 __ROOT__ 를 플레이스홀더로 둔다. 프로젝트 폴더를 옮기거나 이름을
 # 바꿔도 다시 설치하기만 하면 경로가 맞는다.
 render_unit() {
-	sed "s|__ROOT__|$ROOT|g" "$DEPLOY/$1" >"/etc/systemd/system/$1"
+	sed -e "s|__ROOT__|$ROOT|g" \
+	    -e "s|__APP_USER__|$APP_USER|g" \
+	    -e "s|__BACKUP_DEST__|$BACKUP_DEST|g" \
+	    -e "s|__BACKUP_MOUNT__|$BACKUP_MOUNT|g" \
+	    "$DEPLOY/$1" >"/etc/systemd/system/$1"
 	chmod 644 "/etc/systemd/system/$1"
 }
 

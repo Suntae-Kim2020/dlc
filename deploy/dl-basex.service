@@ -5,8 +5,8 @@ Wants=network-online.target
 
 [Service]
 Type=exec
-User=user
-Group=user
+User=__APP_USER__
+Group=__APP_USER__
 WorkingDirectory=/opt/dl/basex
 # -h 8984  HTTP 포트. 기본값은 8080 인데 이 머신에서 이미 쓰이고 있고,
 #          backend/.env 의 BASEX_URL 도 8984 를 가리킨다.

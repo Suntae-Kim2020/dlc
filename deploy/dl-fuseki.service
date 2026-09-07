@@ -5,8 +5,8 @@ Wants=network-online.target
 
 [Service]
 Type=exec
-User=user
-Group=user
+User=__APP_USER__
+Group=__APP_USER__
 # fuseki-server.jar 는 자기 옆의 webapp/ 를 찾는다. 다른 곳에서 실행하면
 # "Can't find resourceBase" 로 뜨지 못한다.
 WorkingDirectory=/opt/dl/fuseki

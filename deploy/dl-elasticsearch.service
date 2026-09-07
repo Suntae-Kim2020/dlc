@@ -5,8 +5,8 @@ Wants=network-online.target
 
 [Service]
 Type=exec
-User=user
-Group=user
+User=__APP_USER__
+Group=__APP_USER__
 WorkingDirectory=/opt/dl/elasticsearch
 # 이 머신은 다른 프로젝트와 함께 쓰므로 힙을 넉넉히 잡지 않는다. 서지 수만 건
 # 규모에서 1g 면 충분하고, 남는 메모리는 OS 페이지 캐시가 더 잘 쓴다.
