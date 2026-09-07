@@ -110,6 +110,30 @@ if [ ! -f "$ROOT/backend/.env" ]; then
 fi
 ok ".env" "있음"
 
+# 프론트엔드 빌드 설정도 여기서 막는다. 이 파일이 없으면 빌드가 실패하지 않고
+# API 주소가 기본값(http://localhost:4000)으로 박힌 채 완성된다. 설치는 끝까지
+# 성공하고 정적 파일도 배포되지만, 브라우저가 자기 PC 로 API 를 부르게 되어
+# 화면에서 네트워크 오류만 난다. 실제로 이렇게 한 번 나갔다.
+if [ ! -f "$ROOT/frontend/.env.production" ]; then
+	cat >&2 <<EOF
+
+[중단] frontend/.env.production 이 없습니다.
+
+  없이 빌드하면 API 주소가 http://localhost:4000 으로 박혀서, 화면은 뜨는데
+  모든 요청이 실패합니다. gitignore 대상이라 clone 에는 들어오지 않습니다.
+
+  운영 서버라면 이렇게 만드세요:
+
+    cat > "$ROOT/frontend/.env.production" <<'ENV'
+    VITE_API_BASE_URL=https://$DOMAIN
+    VITE_READ_ONLY=true
+    ENV
+
+EOF
+	exit 1
+fi
+ok "빌드 설정" "frontend/.env.production 있음"
+
 # 이 머신이 바깥으로 나가는 인터페이스의 주소. 공인 IP 가 NIC 에 직접 붙어 있는
 # 구성이라 이 값이 곧 서비스 주소가 된다. 유동 IP 라 바뀔 수 있어 매번 찾는다.
 DEFAULT_IF="$(ip route show default | awk '{print $5; exit}')"
