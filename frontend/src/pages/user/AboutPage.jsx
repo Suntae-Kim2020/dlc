@@ -56,7 +56,23 @@ const PEOPLE = [
   },
 ]
 
-const SPONSORS = ['(주)아르고넷', '(주)알투어스']
+// 후원 기업. 소개 문구와 링크는 lislab.kr/about/people 의 원문 그대로다.
+const SPONSORS = [
+  {
+    name: '(주)아르고넷',
+    tagline: 'AI 기반 연구성과 · 연구데이터 관리 전문 기업',
+    url: 'https://argonet.co.kr/',
+    host: 'argonet.co.kr',
+    bio: '(주)아르고넷은 “정보, 자원, 시스템, 사람이 서로 소통하는 더 나은 지식세상”을 지향하며 AI 기반 연구성과·연구데이터 관리 분야를 선도해 온 전문 기업입니다. 대학과 정부출연연구기관, 학회를 대상으로 연구자의 논문·특허·저서 등 다양한 성과정보를 통합 수집하고 객관적 지표로 분석하는 연구성과관리시스템(R2RIMS/S2RIMS), 기관의 학술 자산을 개방형으로 축적·공개하는 기관 리포지터리 ScholarWorks, 데이터관리계획(DMP) 수립부터 R&D 연구데이터의 보존·공유·재사용까지 지원하는 연구데이터 리포지터리 DataWorks를 공급하고 있습니다. 또한 학술지 논문 투고·심사 관리 서비스, AI 검색 솔루션 ARi Search, 콘텐츠 통합관리 시스템 Contentree 등을 통해 메타데이터 표준과 시맨틱·AI 기술을 실제 서비스로 구현해 왔습니다. 오픈 사이언스 생태계에 필요한 실무 역량과 현장 경험을 바탕으로 LIS Lab의 교육·연구 활동을 후원하고 있습니다.',
+  },
+  {
+    name: '(주)알투어스',
+    tagline: '연구데이터 전주기 컨설팅 전문 기업',
+    url: 'https://r2urs.com/',
+    host: 'r2urs.com',
+    bio: '주식회사 알투어스(R2URS)는 연구데이터의 수집·저장·관리·보존·출판·재사용에 이르는 전주기를 아우르는 연구데이터 컨설팅 전문 기업입니다. 국제 표준에 기반한 실행 중심의 컨설팅을 지향하며, 신뢰할 수 있는 데이터 리포지터리의 국제 인증인 CoreTrustSeal 획득 컨설팅을 핵심 역량으로 삼고 있습니다. 이와 함께 기관의 연구데이터 거버넌스 체계 수립(조직·규정·프로세스 정비), 연구자가 실무에 바로 활용할 수 있는 전주기 가이드라인 제작, 학문 분야별 메타데이터 스키마 설계와 표준 제정, DOI·ISNI 등 식별체계 연계, 기관평가 대응을 위한 성과 분석과 증빙 체계화, 연구데이터 플랫폼·리포지터리 구축 및 운영 지원까지 폭넓은 서비스를 제공합니다. 17개 기관과 34건의 과제를 수행하며 축적한 현장 경험을 바탕으로 LIS Lab의 교육·연구 활동을 후원하고 있습니다.',
+  },
+]
 
 function Section({ title, desc, children }) {
   return (
@@ -186,15 +202,29 @@ export default function AboutPage() {
       </Section>
 
       {/* ---------------------------------------------------------- 후원 */}
-      <Section title="후원">
-        <div className="flex flex-wrap gap-2">
+      <Section
+        title="운영에 도움을 주는 기업들"
+        desc="LIS Lab 의 교육·연구 활동은 아래 기업들의 후원으로 운영됩니다."
+      >
+        <div className="space-y-3">
           {SPONSORS.map((s) => (
-            <span
-              key={s}
-              className="text-sm text-neutral-700 border border-neutral-200 rounded-md px-3 py-1.5"
+            <div
+              key={s.name}
+              className="border border-neutral-200 rounded-lg p-5"
             >
-              {s}
-            </span>
+              <h3 className="font-medium text-neutral-900">{s.name}</h3>
+              <p className="text-sm text-indigo-600 mt-0.5">{s.tagline}</p>
+              <p className="text-sm text-neutral-600 mt-3 leading-7">{s.bio}</p>
+              <a
+                href={s.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-sm text-indigo-600 hover:underline mt-3"
+              >
+                {s.host} 바로가기
+                <span aria-hidden="true">→</span>
+              </a>
+            </div>
           ))}
         </div>
       </Section>
