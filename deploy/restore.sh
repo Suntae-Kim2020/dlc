@@ -79,7 +79,13 @@ sudo systemctl stop dl-backend
 sudo -u postgres psql -q -c "DROP DATABASE IF EXISTS \"$DB_NAME\";"
 sudo -u postgres psql -q -c "CREATE DATABASE \"$DB_NAME\" OWNER \"$DB_USER\";"
 sudo -u postgres psql -d "$DB_NAME" -q -c "CREATE EXTENSION IF NOT EXISTS pg_trgm;"
-zcat "$SNAP" | psql -h 127.0.0.1 -U "$DB_USER" -d "$DB_NAME" -q -v ON_ERROR_STOP=1
+# COMMENT ON EXTENSION 은 걸러낸다. pg_trgm 은 install.sh 가 postgres 로
+# 만들기 때문에 소유자가 postgres 인데, 적재는 앱 계정으로 한다(그래야 테이블
+# 소유자가 앱 계정이 되고 백엔드가 쓸 수 있다). 앱 계정은 남의 확장에 주석을
+# 달 수 없어 "must be owner of extension pg_trgm" 으로 멈춘다. 주석은 설명
+# 문구일 뿐이라 빼도 기능에 영향이 없다.
+zcat "$SNAP" | sed '/^COMMENT ON EXTENSION /d' |
+	psql -h 127.0.0.1 -U "$DB_USER" -d "$DB_NAME" -q -v ON_ERROR_STOP=1
 echo "  bib_records $(psql -h 127.0.0.1 -U "$DB_USER" -d "$DB_NAME" -Atc 'select count(*) from bib_records') 건"
 
 say "검색·RDF·XML 재생성"
