@@ -462,7 +462,7 @@ cat <<MSG
 
 설치가 끝났습니다.
 
-  1) DNS:   $DOMAIN A 레코드가 $BIND_ADDR 를 가리켜야 합니다
+  1) DNS:   $DOMAIN A 레코드가 $PUBLIC_ADDR 를 가리켜야 합니다
             (지금은 ${resolved:-없음})
   2) 확인:  curl -I https://$DOMAIN
 

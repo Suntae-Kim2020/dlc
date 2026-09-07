@@ -58,8 +58,14 @@ say "복원 대상"
 echo "  $SNAP  ($(du -h "$SNAP" | cut -f1))"
 echo
 echo "  현재 데이터베이스는 지워지고 이 스냅숏으로 대체됩니다."
-read -rp "  계속할까요? [y/N] " go
-[ "$go" = "y" ] || exit 1
+# 원격에서 비대화식으로 돌릴 때를 위해 미리 답할 수 있게 한다.
+# 기본값은 그대로 물어보는 쪽이다 — 이 스크립트는 DB 를 지운다.
+if [ "${DL_ASSUME_YES:-}" = "1" ]; then
+	echo "  계속합니다 [DL_ASSUME_YES=1]"
+else
+	read -rp "  계속할까요? [y/N] " go
+	[ "$go" = "y" ] || exit 1
+fi
 
 gzip -t "$SNAP" || {
 	echo "❌ 스냅숏이 손상됐습니다." >&2
