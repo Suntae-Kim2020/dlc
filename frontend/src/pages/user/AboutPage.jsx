@@ -61,6 +61,7 @@ const SPONSORS = [
   {
     name: '(주)아르고넷',
     tagline: 'AI 기반 연구성과 · 연구데이터 관리 전문 기업',
+    logo: '/sponsors/argonet.png',
     url: 'https://argonet.co.kr/',
     host: 'argonet.co.kr',
     bio: '(주)아르고넷은 “정보, 자원, 시스템, 사람이 서로 소통하는 더 나은 지식세상”을 지향하며 AI 기반 연구성과·연구데이터 관리 분야를 선도해 온 전문 기업입니다. 대학과 정부출연연구기관, 학회를 대상으로 연구자의 논문·특허·저서 등 다양한 성과정보를 통합 수집하고 객관적 지표로 분석하는 연구성과관리시스템(R2RIMS/S2RIMS), 기관의 학술 자산을 개방형으로 축적·공개하는 기관 리포지터리 ScholarWorks, 데이터관리계획(DMP) 수립부터 R&D 연구데이터의 보존·공유·재사용까지 지원하는 연구데이터 리포지터리 DataWorks를 공급하고 있습니다. 또한 학술지 논문 투고·심사 관리 서비스, AI 검색 솔루션 ARi Search, 콘텐츠 통합관리 시스템 Contentree 등을 통해 메타데이터 표준과 시맨틱·AI 기술을 실제 서비스로 구현해 왔습니다. 오픈 사이언스 생태계에 필요한 실무 역량과 현장 경험을 바탕으로 LIS Lab의 교육·연구 활동을 후원하고 있습니다.',
@@ -68,6 +69,7 @@ const SPONSORS = [
   {
     name: '(주)알투어스',
     tagline: '연구데이터 전주기 컨설팅 전문 기업',
+    logo: '/sponsors/r2urs.svg',
     url: 'https://r2urs.com/',
     host: 'r2urs.com',
     bio: '주식회사 알투어스(R2URS)는 연구데이터의 수집·저장·관리·보존·출판·재사용에 이르는 전주기를 아우르는 연구데이터 컨설팅 전문 기업입니다. 국제 표준에 기반한 실행 중심의 컨설팅을 지향하며, 신뢰할 수 있는 데이터 리포지터리의 국제 인증인 CoreTrustSeal 획득 컨설팅을 핵심 역량으로 삼고 있습니다. 이와 함께 기관의 연구데이터 거버넌스 체계 수립(조직·규정·프로세스 정비), 연구자가 실무에 바로 활용할 수 있는 전주기 가이드라인 제작, 학문 분야별 메타데이터 스키마 설계와 표준 제정, DOI·ISNI 등 식별체계 연계, 기관평가 대응을 위한 성과 분석과 증빙 체계화, 연구데이터 플랫폼·리포지터리 구축 및 운영 지원까지 폭넓은 서비스를 제공합니다. 17개 기관과 34건의 과제를 수행하며 축적한 현장 경험을 바탕으로 LIS Lab의 교육·연구 활동을 후원하고 있습니다.',
@@ -212,6 +214,16 @@ export default function AboutPage() {
               key={s.name}
               className="border border-neutral-200 rounded-lg p-5"
             >
+              {/* 두 로고의 가로세로 비가 크게 다르다(아르고넷 약 6.8:1,
+                  알투어스 약 3.1:1). 높이만 고정하고 폭은 비율대로 두어야
+                  어느 쪽도 찌그러지지 않는다. 넓은 쪽이 카드를 다 차지하지
+                  않도록 최대 폭만 막아 둔다. */}
+              <img
+                src={s.logo}
+                alt={`${s.name} 로고`}
+                className="h-9 sm:h-10 w-auto max-w-[240px] object-contain object-left mb-4"
+                loading="lazy"
+              />
               <h3 className="font-medium text-neutral-900">{s.name}</h3>
               <p className="text-sm text-indigo-600 mt-0.5">{s.tagline}</p>
               <p className="text-sm text-neutral-600 mt-3 leading-7">{s.bio}</p>
