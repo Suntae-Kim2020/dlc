@@ -120,20 +120,41 @@ if [ -z "$BIND_ADDR" ]; then
 fi
 ok "이 머신" "$BIND_ADDR ($DEFAULT_IF)"
 
+# 공인 주소. NAT 뒤(GCP 등)에서는 NIC 에 사설 주소만 붙고 공인 주소는 밖에
+# 있으므로, NIC 주소로 DNS 를 비교하면 항상 어긋난다고 나온다. 메타데이터
+# 서비스가 있으면 그쪽을 믿고, 없으면 NIC 주소가 곧 공인 주소인 구성으로 본다.
+# (바인딩은 그대로 BIND_ADDR 로 한다 — NAT 뒤에서는 사설 주소로 받아야 한다.)
+PUBLIC_ADDR="$(curl -fsS -m 2 -H 'Metadata-Flavor: Google' \
+	http://metadata.google.internal/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/external-ip 2>/dev/null || true)"
+if [ -n "$PUBLIC_ADDR" ] && [ "$PUBLIC_ADDR" != "$BIND_ADDR" ]; then
+	ok "공인 주소" "$PUBLIC_ADDR (NAT)"
+else
+	PUBLIC_ADDR="$BIND_ADDR"
+fi
+
+# 확인 질문에 미리 답해 둔다. 원격에서 비대화식으로 돌릴 때 필요하다.
+confirm() { # confirm <질문>
+	if [ "${DL_ASSUME_YES:-}" = "1" ]; then
+		echo "  $1 [DL_ASSUME_YES=1 로 계속]"
+		return 0
+	fi
+	local go
+	read -rp "  $1 [y/N] " go
+	[ "$go" = "y" ]
+}
+
 resolved="$(getent hosts "$DOMAIN" | awk '{print $1}' | head -1 || true)"
 if [ -z "$resolved" ]; then
 	echo "  ⚠️  $DOMAIN 이 아직 DNS 에 없습니다."
-	read -rp "  그래도 계속할까요? [y/N] " go
-	[ "$go" = "y" ] || exit 1
-elif [ "$resolved" != "$BIND_ADDR" ]; then
+	confirm "그래도 계속할까요?" || exit 1
+elif [ "$resolved" != "$PUBLIC_ADDR" ]; then
 	# 레코드가 있는지만 보고 넘어가면, 회선 IP 가 바뀐 걸 모른 채 배포했다가
 	# 인증서 발급만 반복해서 실패한다. 한도에 걸리기 전에 여기서 잡는다.
 	echo "  ⚠️  DNS 가 다른 주소를 가리킵니다."
-	echo "     $DOMAIN -> $resolved   (이 머신은 $BIND_ADDR)"
+	echo "     $DOMAIN -> $resolved   (이 머신은 $PUBLIC_ADDR)"
 	echo "     이대로 진행하면 Caddy 가 인증서를 받지 못합니다."
 	echo "     설치를 먼저 끝내고 DNS 를 바꾸는 순서라면 계속해도 됩니다."
-	read -rp "  계속할까요? [y/N] " go
-	[ "$go" = "y" ] || exit 1
+	confirm "계속할까요?" || exit 1
 else
 	ok "DNS" "$DOMAIN -> $resolved (일치)"
 fi
