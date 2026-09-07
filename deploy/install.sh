@@ -35,6 +35,7 @@ OPT="/opt/dl"
 
 NODE_VER="20.20.2"     # 백엔드가 검증된 계열
 ES_VER="8.19.15"       # nori 플러그인이 함께 제공되는 8.19 계열
+ES_HEAP="${DL_ES_HEAP:-512m}"   # 자료가 늘면 키운다
 FUSEKI_VER="4.10.0"
 BASEX_VER="11.9"
 BASEX_ZIP="BaseX119.zip"
@@ -245,6 +246,16 @@ http.port: 9200
 # 인증을 끄는 대신 루프백에만 묶는 구성. 백엔드 외에는 접근할 일이 없다.
 xpack.security.enabled: false
 EOF
+
+# 힙을 고정한다. 지정하지 않으면 ES 가 머신 메모리의 절반을 잡는데, 이 스택은
+# ES 말고도 Fuseki·BaseX·PostgreSQL 이 같이 올라가므로 작은 머신에서는 그대로
+# 두면 서로 밀어낸다. 실측(서지 30건 규모)으로 512m 면 충분하다.
+mkdir -p "$OPT/elasticsearch/config/jvm.options.d"
+cat >"$OPT/elasticsearch/config/jvm.options.d/heap.options" <<EOF
+-Xms$ES_HEAP
+-Xmx$ES_HEAP
+EOF
+ok "ES 힙" "$ES_HEAP (DL_ES_HEAP 로 변경)"
 
 fetch_into "https://archive.apache.org/dist/jena/binaries/apache-jena-fuseki-$FUSEKI_VER.tar.gz" \
 	"$OPT/fuseki" "apache-jena-fuseki-$FUSEKI_VER"

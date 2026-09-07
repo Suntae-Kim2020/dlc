@@ -17,7 +17,10 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 NAME="${DL_SERVER_NAME:-dl-ailibrary}"
-TYPE="${DL_SERVER_TYPE:-cx32}"
+# cpx31 을 기본으로 두는 이유 — 유럽과 싱가포르 양쪽에서 모두 제공되는
+# 4vCPU/8GB 사양이다. cx 계열은 더 싸지만 유럽에만 있어서, 위치를 바꾸면
+# "그런 타입 없음"으로 막힌다.
+TYPE="${DL_SERVER_TYPE:-cpx31}"
 IMAGE="${DL_SERVER_IMAGE:-ubuntu-24.04}"
 LOCATION="${DL_SERVER_LOCATION:-}"     # 비우면 목록을 보여주고 멈춘다
 SSH_KEY_NAME="${DL_SSH_KEY_NAME:-$NAME}"
@@ -91,11 +94,15 @@ types="$(api GET "/server_types?name=$TYPE")"
 [ "$(printf '%s' "$types" | jq '.server_types | length')" -gt 0 ] || die "서버 타입 '$TYPE' 을 찾을 수 없습니다."
 printf '%s' "$types" | jq -r '.server_types[0] |
 	"  사양            \(.name) — vCPU \(.cores), RAM \(.memory)GB, 디스크 \(.disk)GB"'
+# 통화는 계정마다 다르다(USD/EUR). 하드코딩하면 금액을 잘못 읽게 되므로
+# 계정의 실제 통화를 받아서 붙인다.
+currency="$(api GET /pricing | jq -r '.pricing.currency // "?"')"
 price="$(printf '%s' "$types" | jq -r --arg loc "$LOCATION" '
-	.server_types[0].prices[] | select(.location==$loc) | .price_monthly.gross // "?"')"
+	.server_types[0].prices[] | select(.location==$loc)
+	| (.price_monthly.gross | tonumber * 100 | round / 100 | tostring) // "?"')"
 ok "위치" "$LOCATION"
 ok "이미지" "$IMAGE"
-ok "월 요금" "${price:-?} EUR (부가세 포함, 트래픽 초과분 별도)"
+ok "월 요금" "${price:-?} ${currency} (부가세 포함, 트래픽 초과분 별도)"
 ok "방화벽" "$FIREWALL_NAME — 22/80/443 인바운드만"
 
 if [ "$PLAN_ONLY" = "1" ]; then
