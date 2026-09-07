@@ -6,6 +6,7 @@ import BibDetailPage from './pages/user/BibDetailPage'
 import LoanPage from './pages/user/LoanPage'
 import RagPage from './pages/user/RagPage'
 import SparqlPage from './pages/user/SparqlPage'
+import AboutPage from './pages/user/AboutPage'
 
 import AdminLayout from './pages/admin/AdminLayout'
 import AdminDashboard from './pages/admin/AdminDashboard'
@@ -40,6 +41,7 @@ export default function App() {
           <Route path="/loans" element={<LoanPage />} />
           <Route path="/rag" element={<RagPage />} />
           <Route path="/sparql" element={<SparqlPage />} />
+          <Route path="/about" element={<AboutPage />} />
         </Route>
 
         {/* 관리자 화면 — 자체 헤더 + 사이드바 */}

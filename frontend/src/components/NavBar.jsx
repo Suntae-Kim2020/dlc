@@ -9,6 +9,7 @@ const userLinks = [
   { to: '/loans', label: '대출현황' },
   { to: '/rag', label: 'AI 검색' },
   { to: '/sparql', label: 'SPARQL' },
+  { to: '/about', label: '소개' },
 ]
 
 const adminSubLinks = [
