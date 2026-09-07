@@ -399,7 +399,14 @@ if [ -f /etc/caddy/Caddyfile ]; then
 		' "$CADDY_TMP" >"$CADDY_TMP.2" && mv "$CADDY_TMP.2" "$CADDY_TMP"
 	fi
 fi
-sed -e "s|__BIND_ADDR__|$BIND_ADDR|g" -e "s|__ROOT__|$ROOT|g" "$DEPLOY/Caddyfile" >>"$CADDY_TMP"
+# 443 을 독차지하는 전용 서버가 기본이다. 공유 머신이면 DL_CADDY_BIND 에
+# 묶을 주소를 준다(보통 이 머신의 NIC 주소).
+if [ -n "${DL_CADDY_BIND:-}" ]; then
+	BIND_DIRECTIVE="bind $DL_CADDY_BIND"
+else
+	BIND_DIRECTIVE="# bind — 이 머신은 443 을 독차지하므로 묶지 않는다"
+fi
+sed -e "s|__BIND_DIRECTIVE__|$BIND_DIRECTIVE|g" -e "s|__ROOT__|$ROOT|g" "$DEPLOY/Caddyfile" >>"$CADDY_TMP"
 install -m 644 "$CADDY_TMP" /etc/caddy/Caddyfile
 rm -f "$CADDY_TMP"
 

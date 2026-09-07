@@ -14,11 +14,14 @@
 #   .../harvest/stream    → 127.0.0.1:4000, 버퍼링 없이 (SSE)
 
 dl.ailibrary.kr {
-	# 공인 IP 에만 묶는다. 그냥 두면 Caddy 가 :443 을 와일드카드로 잡으려 하는데,
-	# 태일넷 주소(100.x)의 443 은 다른 프로젝트의 tailscale serve 가 이미 쓰고
-	# 있어서 "bind: address already in use" 로 죽는다.
-	# 주소는 install.sh 가 기본 경로 인터페이스에서 찾아 채워 넣는다.
-	bind __BIND_ADDR__
+	# 443 을 다른 서비스와 나눠 쓰는 머신에서만 특정 주소에 묶는다.
+	# (예전 서버가 그랬다 — 태일넷 주소의 443 을 다른 프로젝트가 이미 쓰고
+	# 있어서 와일드카드로 잡으면 "address already in use" 로 죽었다.)
+	#
+	# 전용 서버에서는 묶지 않는 것이 맞다. 묶어 두면 ACME 의 tls-alpn-01
+	# 검증기가 :443 을 따로 열려다 충돌해 그 방식이 통째로 실패한다.
+	# install.sh 가 DL_CADDY_BIND 를 받아 이 줄을 채우거나 비운다.
+	__BIND_DIRECTIVE__
 
 	# OAI 수확 진행 상황은 Server-Sent Events 로 흘려보낸다. 압축을 걸면
 	# 이벤트가 버퍼에 고여 진행률이 실시간으로 안 보인다. 이 경로만 뺀다.
